@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@api/*": ["src/api/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@store/*": ["src/store/*"],
+      "@pages/*": ["src/pages/*"],
+      "@airaie/ui": ["../../packages/ui/src"],
+      "@airaie/shared": ["../../packages/shared/src"],
+      "@airaie/shell": ["../../packages/shell/src"]
+    }
+  },
+  "include": ["src", "vite-env.d.ts"]
+}

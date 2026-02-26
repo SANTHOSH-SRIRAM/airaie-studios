@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   @airaie/ui — Global Styles
+   Design rules: ALL corners sharp, white + blue theme
+   ============================================================ */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-radius: 0 !important;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-bg text-content-primary;
+    line-height: 1.6;
+  }
+}
+
+/* Scrollbar ------------------------------------------------- */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+/* Component layer ------------------------------------------- */
+@layer components {
+  /* Sharp card */
+  .card {
+    @apply bg-surface-card border border-surface-border shadow-card;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* Interactive focus ring */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1;
+  }
+
+  /* Striped / hatched progress bar fill */
+  .progress-striped {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 6px,
+      rgba(255, 255, 255, 0.2) 6px,
+      rgba(255, 255, 255, 0.2) 12px
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Truncate text */
+  .truncate-line {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  /* Monospace code blocks */
+  .code-block {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    @apply bg-slate-900 text-slate-100 p-4 text-sm leading-relaxed;
+  }
+}
+
+/* Utility layer --------------------------------------------- */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "airaie-studios",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "dev:workflow": "turbo run dev --filter=workflow-studio",
+    "dev:agent": "turbo run dev --filter=agent-studio",
+    "build:packages": "turbo run build --filter=./packages/*",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "packageManager": "npm@11.3.0",
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.0"
+  }
+}

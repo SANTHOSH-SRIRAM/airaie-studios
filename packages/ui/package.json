@@ -1,0 +1,21 @@
+{
+  "name": "@airaie/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens/tailwind-preset": "./src/tokens/tailwind-preset.js",
+    "./tokens/globals.css": "./src/tokens/globals.css"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^3.4.0",
+    "lucide-react": "^0.562.0"
+  }
+}
