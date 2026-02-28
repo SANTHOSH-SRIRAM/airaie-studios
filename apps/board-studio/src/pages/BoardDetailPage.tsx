@@ -4,10 +4,9 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Layers, ShieldCheck, Wrench, Brain, AlertCircle, RefreshCw, MousePointerClick } from 'lucide-react';
-import { Card, Tabs, Spinner, Badge, Button } from '@airaie/ui';
+import { Layers, ShieldCheck, Wrench, Brain, AlertCircle, RefreshCw, MousePointerClick, Download } from 'lucide-react';
+import { Card, Tabs, Spinner, Button } from '@airaie/ui';
 import type { Tab } from '@airaie/ui';
-import type { GateStatus as GateStatusType } from '@/types/board';
 import { useBoardDashboard } from '@hooks/useBoardDetail';
 import BoardHeader from '@components/boards/BoardHeader';
 import ReadinessSpider from '@components/boards/ReadinessSpider';
@@ -20,6 +19,9 @@ const PreflightResults = React.lazy(() => import('@components/boards/PreflightRe
 const ExecutionControls = React.lazy(() => import('@components/boards/ExecutionControls'));
 const GateList = React.lazy(() => import('@components/boards/GateList'));
 const ApprovalQueue = React.lazy(() => import('@components/boards/ApprovalQueue'));
+const EvidenceDiffView = React.lazy(() => import('@components/boards/EvidenceDiffView'));
+const FailureTriagePanel = React.lazy(() => import('@components/boards/FailureTriagePanel'));
+const ExportDialog = React.lazy(() => import('@components/boards/ExportDialog'));
 
 // --- Tab definitions ---
 
@@ -29,19 +31,6 @@ const detailTabs: Tab[] = [
   { id: 'tools', label: 'Tools & Plan', icon: Wrench },
   { id: 'intelligence', label: 'Intelligence', icon: Brain },
 ];
-
-// --- Gate status color mapping ---
-
-function gateStatusVariant(status: GateStatusType) {
-  const map: Record<string, 'success' | 'danger' | 'warning' | 'info' | 'neutral'> = {
-    PASSED: 'success',
-    FAILED: 'danger',
-    EVALUATING: 'info',
-    WAIVED: 'warning',
-    PENDING: 'neutral',
-  };
-  return map[status] ?? 'neutral';
-}
 
 // --- Skeleton for loading state ---
 
@@ -77,6 +66,7 @@ export default function BoardDetailPage() {
   const { board, summary, isLoading, error, refetch } = useBoardDashboard(boardId);
   const [activeTab, setActiveTab] = useState('cards');
   const [selectedCardId, setSelectedCardId] = useState<string | undefined>(undefined);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // --- Loading state ---
   if (isLoading) {
@@ -135,8 +125,21 @@ export default function BoardDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Board header */}
-      <BoardHeader board={board} />
+      {/* Board header with export button */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <BoardHeader board={board} />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          icon={Download}
+          onClick={() => setExportOpen(true)}
+          className="flex-shrink-0 mt-8"
+        >
+          Export
+        </Button>
+      </div>
 
       {/* Dashboard two-column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -214,14 +217,29 @@ export default function BoardDetailPage() {
               </React.Suspense>
             )}
 
-            {activeTab === 'intelligence' && (
-              <Card>
-                <Card.Body>
-                  <p className="text-sm text-content-tertiary">
-                    Intelligence panel will be available in a future update.
-                  </p>
-                </Card.Body>
-              </Card>
+            {activeTab === 'intelligence' && boardId && (
+              <React.Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-48">
+                    <Spinner />
+                  </div>
+                }
+              >
+                <div className="space-y-6">
+                  <EvidenceDiffView boardId={boardId} />
+                  <FailureTriagePanel boardId={boardId} />
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Download}
+                      onClick={() => setExportOpen(true)}
+                    >
+                      Export Report
+                    </Button>
+                  </div>
+                </div>
+              </React.Suspense>
             )}
           </div>
         </div>
@@ -322,6 +340,17 @@ export default function BoardDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Export dialog */}
+      {boardId && (
+        <React.Suspense fallback={null}>
+          <ExportDialog
+            boardId={boardId}
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 }
