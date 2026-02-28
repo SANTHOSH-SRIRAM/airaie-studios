@@ -24,6 +24,8 @@ import CardComponent from './CardComponent';
 
 export interface DependencyGraphProps {
   boardId: string;
+  selectedCardId?: string;
+  onCardSelect?: (cardId: string) => void;
 }
 
 // --- Status -> background color mapping ---
@@ -91,7 +93,7 @@ function getLayoutedElements(
 
 // --- Main component ---
 
-const DependencyGraph: React.FC<DependencyGraphProps> = ({ boardId }) => {
+const DependencyGraph: React.FC<DependencyGraphProps> = ({ boardId, selectedCardId, onCardSelect }) => {
   const navigate = useNavigate();
   const { data: graphData, isLoading: graphLoading } = useCardGraph(boardId);
   const { data: cards, isLoading: cardsLoading } = useCards(boardId);
@@ -135,7 +137,7 @@ const DependencyGraph: React.FC<DependencyGraphProps> = ({ boardId }) => {
         },
         style: {
           backgroundColor: statusBgColors[status] ?? '#f8fafc',
-          border: '1px solid #e2e8f0',
+          border: gn.id === selectedCardId ? '2px solid #3b5fa8' : '1px solid #e2e8f0',
           borderRadius: '0',
           padding: '0',
         },
@@ -155,14 +157,18 @@ const DependencyGraph: React.FC<DependencyGraphProps> = ({ boardId }) => {
     });
 
     return getLayoutedElements(rfNodes, rfEdges);
-  }, [graphData, cards, cardMap, boardId]);
+  }, [graphData, cards, cardMap, boardId, selectedCardId]);
 
-  // Handle node click -> navigate to card detail
+  // Handle node click -> select card or navigate to card detail
   const onNodeClick: NodeMouseHandler<Node<CardNodeData>> = useCallback(
     (_event, node) => {
-      navigate(`/boards/${boardId}/cards/${node.id}`);
+      if (onCardSelect) {
+        onCardSelect(node.id);
+      } else {
+        navigate(`/boards/${boardId}/cards/${node.id}`);
+      }
     },
-    [navigate, boardId]
+    [navigate, boardId, onCardSelect]
   );
 
   if (isLoading) {

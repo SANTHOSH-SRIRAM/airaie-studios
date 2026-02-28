@@ -14,6 +14,8 @@ import AddCardDialog from './AddCardDialog';
 
 export interface CardGridProps {
   boardId: string;
+  selectedCardId?: string;
+  onCardSelect?: (cardId: string) => void;
 }
 
 // --- Kanban column definitions ---
@@ -27,7 +29,7 @@ const kanbanColumns: { status: CardStatus; label: string }[] = [
 
 // --- Main component ---
 
-const CardGrid: React.FC<CardGridProps> = ({ boardId }) => {
+const CardGrid: React.FC<CardGridProps> = ({ boardId, selectedCardId, onCardSelect }) => {
   const navigate = useNavigate();
   const { data: cards, isLoading } = useCards(boardId);
   const [viewMode, setViewMode] = useState<'kanban' | 'graph'>('kanban');
@@ -59,7 +61,12 @@ const CardGrid: React.FC<CardGridProps> = ({ boardId }) => {
   }, [cards]);
 
   const handleCardClick = (card: Card) => {
-    navigate(`/boards/${boardId}/cards/${card.id}`);
+    // If onCardSelect is provided, use it for selection; otherwise navigate
+    if (onCardSelect) {
+      onCardSelect(card.id);
+    } else {
+      navigate(`/boards/${boardId}/cards/${card.id}`);
+    }
   };
 
   if (isLoading) {
@@ -134,11 +141,19 @@ const CardGrid: React.FC<CardGridProps> = ({ boardId }) => {
                     </div>
                   ) : (
                     colCards.map((card) => (
-                      <CardComponent
+                      <div
                         key={card.id}
-                        card={card}
-                        onClick={handleCardClick}
-                      />
+                        className={
+                          selectedCardId === card.id
+                            ? 'ring-2 ring-[#3b5fa8] ring-offset-1'
+                            : ''
+                        }
+                      >
+                        <CardComponent
+                          card={card}
+                          onClick={handleCardClick}
+                        />
+                      </div>
                     ))
                   )}
                 </div>
@@ -147,7 +162,11 @@ const CardGrid: React.FC<CardGridProps> = ({ boardId }) => {
           })}
         </div>
       ) : (
-        <DependencyGraph boardId={boardId} />
+        <DependencyGraph
+          boardId={boardId}
+          selectedCardId={selectedCardId}
+          onCardSelect={onCardSelect}
+        />
       )}
 
       {/* Add card dialog */}

@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Layers, ShieldCheck, Wrench, Brain, AlertCircle, RefreshCw } from 'lucide-react';
+import { Layers, ShieldCheck, Wrench, Brain, AlertCircle, RefreshCw, MousePointerClick } from 'lucide-react';
 import { Card, Tabs, Spinner, Badge, Button } from '@airaie/ui';
 import type { Tab } from '@airaie/ui';
 import type { GateStatus as GateStatusType } from '@/types/board';
@@ -12,8 +12,12 @@ import { useBoardDashboard } from '@hooks/useBoardDetail';
 import BoardHeader from '@components/boards/BoardHeader';
 import ReadinessSpider from '@components/boards/ReadinessSpider';
 
-// CardGrid is built in Task 2 -- lazy import to avoid circular issues
+// Lazy imports for heavy components
 const CardGrid = React.lazy(() => import('@components/boards/CardGrid'));
+const ToolShelfPanel = React.lazy(() => import('@components/boards/ToolShelfPanel'));
+const PlanPreview = React.lazy(() => import('@components/boards/PlanPreview'));
+const PreflightResults = React.lazy(() => import('@components/boards/PreflightResults'));
+const ExecutionControls = React.lazy(() => import('@components/boards/ExecutionControls'));
 
 // --- Tab definitions ---
 
@@ -70,6 +74,7 @@ export default function BoardDetailPage() {
   const { boardId } = useParams<{ boardId: string }>();
   const { board, summary, isLoading, error, refetch } = useBoardDashboard(boardId);
   const [activeTab, setActiveTab] = useState('cards');
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(undefined);
 
   // --- Loading state ---
   if (isLoading) {
@@ -146,7 +151,11 @@ export default function BoardDetailPage() {
                   </div>
                 }
               >
-                <CardGrid boardId={boardId} />
+                <CardGrid
+                  boardId={boardId}
+                  selectedCardId={selectedCardId}
+                  onCardSelect={setSelectedCardId}
+                />
               </React.Suspense>
             )}
 
@@ -188,13 +197,36 @@ export default function BoardDetailPage() {
             )}
 
             {activeTab === 'tools' && (
-              <Card>
-                <Card.Body>
-                  <p className="text-sm text-content-tertiary">
-                    Tools & Plan panel will be available in a future update.
-                  </p>
-                </Card.Body>
-              </Card>
+              <React.Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-48">
+                    <Spinner />
+                  </div>
+                }
+              >
+                {selectedCardId ? (
+                  <div className="space-y-6">
+                    <ToolShelfPanel cardId={selectedCardId} />
+                    <PlanPreview cardId={selectedCardId} />
+                    <PreflightResults cardId={selectedCardId} />
+                    <ExecutionControls cardId={selectedCardId} />
+                  </div>
+                ) : (
+                  <Card>
+                    <Card.Body>
+                      <div className="flex flex-col items-center gap-2 py-8 text-center">
+                        <MousePointerClick size={24} className="text-content-muted" />
+                        <p className="text-sm text-content-tertiary">
+                          Select a card to view tools and plan.
+                        </p>
+                        <p className="text-xs text-content-muted">
+                          Use the Cards tab to select a card, then return here.
+                        </p>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                )}
+              </React.Suspense>
             )}
 
             {activeTab === 'intelligence' && (
