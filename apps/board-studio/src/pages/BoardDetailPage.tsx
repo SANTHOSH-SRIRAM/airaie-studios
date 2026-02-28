@@ -18,6 +18,8 @@ const ToolShelfPanel = React.lazy(() => import('@components/boards/ToolShelfPane
 const PlanPreview = React.lazy(() => import('@components/boards/PlanPreview'));
 const PreflightResults = React.lazy(() => import('@components/boards/PreflightResults'));
 const ExecutionControls = React.lazy(() => import('@components/boards/ExecutionControls'));
+const GateList = React.lazy(() => import('@components/boards/GateList'));
+const ApprovalQueue = React.lazy(() => import('@components/boards/ApprovalQueue'));
 
 // --- Tab definitions ---
 
@@ -159,41 +161,24 @@ export default function BoardDetailPage() {
               </React.Suspense>
             )}
 
-            {activeTab === 'gates' && (
-              <Card>
-                <Card.Body>
-                  <h3 className="text-sm font-semibold text-content-primary mb-3">
-                    Gate Details
-                  </h3>
-                  {gateSummary.length === 0 ? (
-                    <p className="text-sm text-content-tertiary">
-                      No gates configured for this board.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {gateSummary.map((gate, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-2 border-b border-surface-border last:border-0"
-                        >
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck size={14} className="text-content-muted" />
-                            <span className="text-sm text-content-primary">
-                              {gate.name}
-                            </span>
-                            <Badge variant="neutral" className="text-xs">
-                              {gate.type}
-                            </Badge>
-                          </div>
-                          <Badge variant={gateStatusVariant(gate.status)} dot>
-                            {gate.status}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
+            {activeTab === 'gates' && boardId && (
+              <React.Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-48">
+                    <Spinner />
+                  </div>
+                }
+              >
+                <div className="space-y-6">
+                  <GateList boardId={boardId} />
+                  <div>
+                    <h3 className="text-sm font-semibold text-content-primary mb-3">
+                      Pending Approvals
+                    </h3>
+                    <ApprovalQueue boardId={boardId} />
+                  </div>
+                </div>
+              </React.Suspense>
             )}
 
             {activeTab === 'tools' && (
