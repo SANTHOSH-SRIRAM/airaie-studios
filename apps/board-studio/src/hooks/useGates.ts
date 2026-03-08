@@ -3,7 +3,7 @@
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchGates, fetchGate, approveGate, rejectGate, waiveGate } from '@api/gates';
+import { fetchGates, fetchGate, evaluateGate, approveGate, rejectGate, waiveGate } from '@api/gates';
 
 // --- Query key factories ---
 
@@ -30,16 +30,31 @@ export function useGateDetail(gateId: string | undefined) {
     queryKey: gateKeys.detail(gateId!),
     queryFn: () => fetchGate(gateId!),
     enabled: !!gateId,
+    // Poll every 3s while gate is evaluating, stop when resolved
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'EVALUATING' ? 3000 : false;
+    },
   });
 }
 
 // --- Mutations ---
 
+export function useEvaluateGate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (gateId: string) => evaluateGate(gateId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: gateKeys.all });
+    },
+  });
+}
+
 export function useApproveGate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ gateId, comment }: { gateId: string; comment?: string }) =>
-      approveGate(gateId, { comment }),
+    mutationFn: ({ gateId, role }: { gateId: string; role?: string }) =>
+      approveGate(gateId, { role }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gateKeys.all });
     },
@@ -49,8 +64,8 @@ export function useApproveGate() {
 export function useRejectGate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ gateId, reason }: { gateId: string; reason: string }) =>
-      rejectGate(gateId, { reason }),
+    mutationFn: ({ gateId, rationale }: { gateId: string; rationale: string }) =>
+      rejectGate(gateId, { rationale }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gateKeys.all });
     },
@@ -60,8 +75,8 @@ export function useRejectGate() {
 export function useWaiveGate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ gateId, reason }: { gateId: string; reason?: string }) =>
-      waiveGate(gateId, { reason }),
+    mutationFn: ({ gateId, rationale }: { gateId: string; rationale: string }) =>
+      waiveGate(gateId, { rationale }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: gateKeys.all });
     },

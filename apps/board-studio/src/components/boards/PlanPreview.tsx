@@ -30,7 +30,7 @@ export interface PlanPreviewProps {
 
 const stepStatusColors: Record<string, string> = {
   pending: '#f8fafc',     // slate-50
-  running: '#dbeafe',     // blue-100
+  running: '#e2e8f0',     // slate-200
   completed: '#dcfce7',   // green-100
   failed: '#fee2e2',      // red-100
   draft: '#f8fafc',       // slate-50
@@ -353,8 +353,8 @@ const PlanPreview: React.FC<PlanPreviewProps> = ({ cardId }) => {
             nodeStrokeWidth={3}
             nodeColor={(node) => {
               const step = (node.data as StepNodeData)?.step;
-              if (!step) return '#f1f5f9';
-              return stepStatusColors[step.status] ?? '#f1f5f9';
+              if (!step) return '#f8fafc';
+              return stepStatusColors[step.status] ?? '#f8fafc';
             }}
           />
         </ReactFlow>

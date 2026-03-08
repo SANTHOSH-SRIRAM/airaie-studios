@@ -60,16 +60,16 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ value, onChange }) => {
               'flex flex-col items-start gap-3 p-4 text-left border transition-colors',
               'focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1',
               selected
-                ? 'border-[#3b5fa8] bg-blue-50'
+                ? 'border-brand-secondary bg-blue-50'
                 : 'border-surface-border bg-white hover:bg-surface-hover'
             )}
           >
             <div className="flex items-center gap-2">
               <Icon
                 size={20}
-                className={selected ? 'text-[#3b5fa8]' : 'text-content-muted'}
+                className={selected ? 'text-brand-secondary' : 'text-content-muted'}
               />
-              <span className={cn('text-sm font-semibold', selected ? 'text-[#3b5fa8]' : 'text-content-primary')}>
+              <span className={cn('text-sm font-semibold', selected ? 'text-brand-secondary' : 'text-content-primary')}>
                 {label}
               </span>
             </div>
@@ -79,7 +79,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ value, onChange }) => {
             <span
               className={cn(
                 'text-xs font-medium px-2 py-0.5',
-                selected ? 'bg-blue-100 text-[#3b5fa8]' : 'bg-slate-100 text-content-muted'
+                selected ? 'bg-blue-100 text-brand-secondary' : 'bg-slate-100 text-content-muted'
               )}
             >
               {gates}

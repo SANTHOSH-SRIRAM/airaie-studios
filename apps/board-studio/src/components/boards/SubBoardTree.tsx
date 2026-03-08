@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Plus } from 'lucide-react';
 import { Badge, Spinner, cn } from '@airaie/ui';
 import type { BadgeVariant } from '@airaie/ui';
 import { useBoardChildren } from '@hooks/useBoards';
@@ -15,6 +15,7 @@ export interface SubBoardTreeProps {
   boardId: string;
   depth?: number;
   maxDepth?: number;
+  onCreateSubBoard?: (parentBoardId: string) => void;
 }
 
 function modeBadgeVariant(mode: BoardMode): BadgeVariant {
@@ -75,7 +76,11 @@ const SubBoardTreeItem: React.FC<{ board: Board; depth: number; maxDepth: number
         </Badge>
 
         <div className="w-16">
-          <ReadinessBar readiness={board.readiness} />
+          {board.readiness != null ? (
+            <ReadinessBar readiness={board.readiness} />
+          ) : (
+            <span className="text-xs text-content-muted">&mdash;</span>
+          )}
         </div>
       </div>
 
@@ -86,7 +91,7 @@ const SubBoardTreeItem: React.FC<{ board: Board; depth: number; maxDepth: number
   );
 };
 
-const SubBoardTree: React.FC<SubBoardTreeProps> = ({ boardId, depth = 1, maxDepth = 3 }) => {
+const SubBoardTree: React.FC<SubBoardTreeProps> = ({ boardId, depth = 1, maxDepth = 3, onCreateSubBoard }) => {
   const { data: children, isLoading } = useBoardChildren(boardId);
 
   if (isLoading) {
@@ -97,15 +102,27 @@ const SubBoardTree: React.FC<SubBoardTreeProps> = ({ boardId, depth = 1, maxDept
     );
   }
 
-  if (!children || children.length === 0) {
-    return null;
-  }
-
   return (
     <div className="border-l border-surface-border ml-4">
-      {children.map((child) => (
+      {children && children.length > 0 && children.map((child) => (
         <SubBoardTreeItem key={child.id} board={child} depth={depth} maxDepth={maxDepth} />
       ))}
+
+      {/* Add Sub-Board button */}
+      {onCreateSubBoard && depth <= 1 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreateSubBoard(boardId);
+          }}
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-content-muted hover:text-brand-secondary hover:bg-surface-hover transition-colors w-full"
+          style={{ paddingLeft: `${(depth + 1) * 16}px` }}
+        >
+          <Plus size={12} />
+          <span>Add Sub-Board</span>
+        </button>
+      )}
     </div>
   );
 };

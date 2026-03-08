@@ -12,7 +12,7 @@ export interface ProposalCardProps {
   isSelected?: boolean;
 }
 
-const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onApprove, onReject, onSelect, isSelected }) => {
+const ProposalCard: React.FC<ProposalCardProps> = React.memo(({ proposal, onApprove, onReject, onSelect, isSelected }) => {
   return (
     <div
       onClick={onSelect}
@@ -40,7 +40,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onApprove, onReje
       )}
     </div>
   );
-};
+});
 
 ProposalCard.displayName = 'ProposalCard';
 

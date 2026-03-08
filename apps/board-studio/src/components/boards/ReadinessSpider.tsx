@@ -10,7 +10,7 @@ import {
   PolarRadiusAxis,
   Radar,
   ResponsiveContainer,
-} from 'recharts';
+} from '@airaie/charts';
 
 export interface ReadinessSpiderProps {
   readiness: {
@@ -23,7 +23,7 @@ export interface ReadinessSpiderProps {
   className?: string;
 }
 
-const ReadinessSpider: React.FC<ReadinessSpiderProps> = ({ readiness, className }) => {
+const ReadinessSpider: React.FC<ReadinessSpiderProps> = React.memo(({ readiness, className }) => {
   const data = [
     { category: 'Design', value: readiness.design },
     { category: 'Validation', value: readiness.validation },
@@ -42,15 +42,15 @@ const ReadinessSpider: React.FC<ReadinessSpiderProps> = ({ readiness, className 
           <Radar
             name="Readiness"
             dataKey="value"
-            stroke="#3b82f6"
-            fill="#3b82f6"
+            stroke="#1e40af"
+            fill="#1e40af"
             fillOpacity={0.2}
           />
         </RadarChart>
       </ResponsiveContainer>
     </div>
   );
-};
+});
 
 ReadinessSpider.displayName = 'ReadinessSpider';
 

@@ -3,10 +3,8 @@
 // ============================================================
 
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { KERNEL_ENDPOINTS } from '@/constants/api';
 import { fetchCardEvidence } from '@api/cards';
-import type { EvidenceDiff, TriageResult, ReproducibilityScore } from '@/types/board';
+import { fetchEvidenceDiff, fetchTriage, fetchReproducibility } from '@api/boards';
 
 // --- Query key factories ---
 
@@ -36,12 +34,7 @@ export function useCardEvidence(
 export function useEvidenceDiff(boardId: string | undefined) {
   return useQuery({
     queryKey: evidenceKeys.diff(boardId!),
-    queryFn: async () => {
-      const { data } = await axios.get<{ diffs: EvidenceDiff[] }>(
-        KERNEL_ENDPOINTS.BOARDS.EVIDENCE_DIFF(boardId!)
-      );
-      return data.diffs ?? [];
-    },
+    queryFn: () => fetchEvidenceDiff(boardId!),
     enabled: !!boardId,
   });
 }
@@ -49,12 +42,7 @@ export function useEvidenceDiff(boardId: string | undefined) {
 export function useTriage(boardId: string | undefined) {
   return useQuery({
     queryKey: evidenceKeys.triage(boardId!),
-    queryFn: async () => {
-      const { data } = await axios.get<TriageResult>(
-        KERNEL_ENDPOINTS.BOARDS.TRIAGE(boardId!)
-      );
-      return data;
-    },
+    queryFn: () => fetchTriage(boardId!),
     enabled: !!boardId,
   });
 }
@@ -62,12 +50,7 @@ export function useTriage(boardId: string | undefined) {
 export function useReproducibility(boardId: string | undefined) {
   return useQuery({
     queryKey: evidenceKeys.reproducibility(boardId!),
-    queryFn: async () => {
-      const { data } = await axios.get<ReproducibilityScore>(
-        KERNEL_ENDPOINTS.BOARDS.REPRODUCIBILITY(boardId!)
-      );
-      return data;
-    },
+    queryFn: () => fetchReproducibility(boardId!),
     enabled: !!boardId,
   });
 }

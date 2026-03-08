@@ -10,7 +10,7 @@ const NODE_HEIGHT = NODE_HEADER_HEIGHT + NODE_BODY_HEIGHT;
 
 const typeColors: Record<CanvasNodeType['type'], string> = {
   control: '#f59e0b',
-  board: '#3b82f6',
+  board: '#1e40af',
   agent: '#8b5cf6',
   human: '#22c55e',
   system: '#06b6d4',
@@ -87,7 +87,7 @@ const CanvasNodeComponent: React.FC<CanvasNodeProps> = ({
           className={cn(
             'w-full h-full bg-white border-2 select-none',
             isDragging ? 'cursor-grabbing' : 'cursor-grab',
-            isSelected ? 'border-[#3b82f6] shadow-md' : 'border-surface-border shadow-card'
+            isSelected ? 'border-[#1e40af] shadow-md' : 'border-surface-border shadow-card'
           )}
           style={{ width: NODE_WIDTH, height: NODE_HEIGHT }}
         >

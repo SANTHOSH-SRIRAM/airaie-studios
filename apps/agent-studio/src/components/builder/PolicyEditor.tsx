@@ -58,7 +58,7 @@ const PolicyEditor: React.FC<{ className?: string }> = ({ className }) => {
           onChange={(e) =>
             setPolicy({ ...policy, auto_approve_threshold: parseFloat(e.target.value) })
           }
-          className="w-full h-1.5 accent-[#3b5fa8] cursor-pointer"
+          className="w-full h-1.5 accent-brand-secondary cursor-pointer"
         />
       </div>
 
@@ -72,7 +72,7 @@ const PolicyEditor: React.FC<{ className?: string }> = ({ className }) => {
                 type="checkbox"
                 checked={policy.require_approval_for.includes(action)}
                 onChange={() => toggleApprovalAction(action)}
-                className="w-4 h-4 accent-[#3b5fa8]"
+                className="w-4 h-4 accent-brand-secondary"
               />
               <span className="capitalize">{action}</span>
             </label>

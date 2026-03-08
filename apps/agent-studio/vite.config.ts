@@ -14,6 +14,23 @@ export default defineConfig({
       '@pages': path.resolve(__dirname, './src/pages'),
     },
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'zustand', '@tanstack/react-query', 'axios', 'lucide-react', 'clsx', 'react-resizable-panels', 'cmdk'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'state': ['zustand', '@tanstack/react-query'],
+          'charts': ['@airaie/charts', 'recharts'],
+          'ui': ['@airaie/ui', '@airaie/shell', 'lucide-react'],
+          'ide': ['react-resizable-panels', 'cmdk'],
+          'graph': ['@xyflow/react'],
+        },
+      },
+    },
+  },
   server: {
     port: 3002,
     proxy: {

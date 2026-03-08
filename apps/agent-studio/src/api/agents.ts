@@ -35,13 +35,13 @@ export async function createVersion(agentId: string, body: { spec: Record<string
   return data;
 }
 
-export async function validateVersion(agentId: string, version: number) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.VALIDATE(agentId, version));
+export async function validateVersion(agentId: string, version: number): Promise<KernelAgentVersion> {
+  const { data } = await apiClient.post<KernelAgentVersion>(ENDPOINTS.AGENTS.VALIDATE(agentId, version));
   return data;
 }
 
-export async function publishVersion(agentId: string, version: number) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.PUBLISH(agentId, version));
+export async function publishVersion(agentId: string, version: number): Promise<KernelAgentVersion> {
+  const { data } = await apiClient.post<KernelAgentVersion>(ENDPOINTS.AGENTS.PUBLISH(agentId, version));
   return data;
 }
 

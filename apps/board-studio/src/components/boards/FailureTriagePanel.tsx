@@ -68,7 +68,7 @@ function TriageItem({ item }: { item: TriageFailure }) {
           <p className="text-sm text-content-primary">{item.action}</p>
           <div className="text-xs font-mono text-content-tertiary mt-1">
             value: {item.value} {item.operator} {item.threshold} (overshoot:{' '}
-            {item.overshoot_pct.toFixed(1)}%)
+            {(item.overshoot_pct ?? 0).toFixed(1)}%)
           </div>
           {item.insights.length > 0 && (
             <div className="mt-2 space-y-1">
@@ -107,7 +107,7 @@ function ReproducibilityPanel({ boardId }: { boardId: string }) {
 
   if (!repro) return null;
 
-  const percent = Math.round(repro.score * 100);
+  const percent = Math.round((repro.score ?? 0) * 100);
   const barColor =
     repro.interpretation === 'high'
       ? 'bg-green-600'
@@ -152,9 +152,9 @@ function ReproducibilityPanel({ boardId }: { boardId: string }) {
           </div>
           <ProgressBar value={percent} color={barColor} />
           <div className="flex items-center justify-between text-xs text-content-tertiary">
-            <span>CV: {repro.cv.toFixed(3)}</span>
+            <span>CV: {(repro.cv ?? 0).toFixed(3)}</span>
             <span>
-              {repro.run_count} run{repro.run_count !== 1 ? 's' : ''}
+              {repro.run_count ?? 0} run{repro.run_count !== 1 ? 's' : ''}
             </span>
           </div>
         </div>

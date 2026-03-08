@@ -2,20 +2,7 @@ import React from 'react';
 import { cn, Button, Input, CodeEditor } from '@airaie/ui';
 import { Save, X } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
-
-interface TestCase {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  criteria: {
-    min_actions?: number;
-    max_actions?: number;
-    min_score?: number;
-    max_cost?: number;
-    required_tools?: string[];
-    forbidden_tools?: string[];
-  };
-}
+import { useEvalCases, useCreateEvalCase, useUpdateEvalCase } from '@hooks/useEvals';
 
 export interface TestCaseEditorProps {
   testCaseId: string | null;
@@ -23,19 +10,16 @@ export interface TestCaseEditorProps {
   onCancel: () => void;
 }
 
-const storageKey = (agentId: string) => `airaie:evals:${agentId}`;
-
 const TestCaseEditor: React.FC<TestCaseEditorProps> = ({ testCaseId, onSave, onCancel }) => {
   const agentId = useUIStore((s) => s.agentId);
+  const { data: evalCases } = useEvalCases(agentId);
+  const createMutation = useCreateEvalCase();
+  const updateMutation = useUpdateEvalCase();
 
-  const loadAll = (): TestCase[] => {
-    try { return JSON.parse(localStorage.getItem(storageKey(agentId)) ?? '[]'); } catch { return []; }
-  };
-
-  const existing = testCaseId ? loadAll().find((tc) => tc.id === testCaseId) : null;
+  const existing = testCaseId ? evalCases?.find((tc) => tc.id === testCaseId) : null;
 
   const [name, setName] = React.useState(existing?.name ?? '');
-  const [inputJson, setInputJson] = React.useState(existing ? JSON.stringify(existing.input, null, 2) : '{}');
+  const [inputJson, setInputJson] = React.useState(existing ? JSON.stringify(existing.inputs, null, 2) : '{}');
   const [minActions, setMinActions] = React.useState<string>(existing?.criteria.min_actions?.toString() ?? '');
   const [maxActions, setMaxActions] = React.useState<string>(existing?.criteria.max_actions?.toString() ?? '');
   const [minScore, setMinScore] = React.useState<string>(existing?.criteria.min_score?.toString() ?? '');
@@ -43,30 +27,28 @@ const TestCaseEditor: React.FC<TestCaseEditorProps> = ({ testCaseId, onSave, onC
   const [requiredTools, setRequiredTools] = React.useState(existing?.criteria.required_tools?.join(', ') ?? '');
   const [forbiddenTools, setForbiddenTools] = React.useState(existing?.criteria.forbidden_tools?.join(', ') ?? '');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let parsedInput: Record<string, unknown>;
     try { parsedInput = JSON.parse(inputJson); } catch { return; }
 
-    const tc: TestCase = {
-      id: existing?.id ?? crypto.randomUUID(),
-      name,
-      input: parsedInput,
-      criteria: {
-        ...(minActions ? { min_actions: Number(minActions) } : {}),
-        ...(maxActions ? { max_actions: Number(maxActions) } : {}),
-        ...(minScore ? { min_score: Number(minScore) } : {}),
-        ...(maxCost ? { max_cost: Number(maxCost) } : {}),
-        ...(requiredTools.trim() ? { required_tools: requiredTools.split(',').map((s) => s.trim()).filter(Boolean) } : {}),
-        ...(forbiddenTools.trim() ? { forbidden_tools: forbiddenTools.split(',').map((s) => s.trim()).filter(Boolean) } : {}),
-      },
+    const criteria: Record<string, unknown> = {
+      ...(minActions ? { min_actions: Number(minActions) } : {}),
+      ...(maxActions ? { max_actions: Number(maxActions) } : {}),
+      ...(minScore ? { min_score: Number(minScore) } : {}),
+      ...(maxCost ? { max_cost: Number(maxCost) } : {}),
+      ...(requiredTools.trim() ? { required_tools: requiredTools.split(',').map((s) => s.trim()).filter(Boolean) } : {}),
+      ...(forbiddenTools.trim() ? { forbidden_tools: forbiddenTools.split(',').map((s) => s.trim()).filter(Boolean) } : {}),
     };
 
-    const all = loadAll();
-    const idx = all.findIndex((t) => t.id === tc.id);
-    if (idx >= 0) all[idx] = tc; else all.push(tc);
-    localStorage.setItem(storageKey(agentId), JSON.stringify(all));
+    if (existing) {
+      await updateMutation.mutateAsync({ agentId, evalId: existing.id, name, inputs: parsedInput, criteria });
+    } else {
+      await createMutation.mutateAsync({ agentId, name, inputs: parsedInput, criteria });
+    }
     onSave();
   };
+
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -112,7 +94,7 @@ const TestCaseEditor: React.FC<TestCaseEditorProps> = ({ testCaseId, onSave, onC
 
       <div className="flex items-center justify-end gap-2 pt-2">
         <Button variant="ghost" size="sm" icon={X} onClick={onCancel}>Cancel</Button>
-        <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={!name.trim()}>Save</Button>
+        <Button variant="primary" size="sm" icon={Save} onClick={handleSave} disabled={!name.trim()} loading={saving}>Save</Button>
       </div>
     </div>
   );

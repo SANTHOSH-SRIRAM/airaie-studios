@@ -15,13 +15,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#3b5fa8] text-white hover:bg-[#334f8f] active:bg-[#2c4580] border border-transparent',
+    'bg-brand-secondary text-white hover:bg-brand-secondary-dark active:bg-brand-secondary-dark border border-transparent',
   secondary:
     'bg-white text-content-primary border border-surface-border hover:bg-surface-hover active:bg-slate-100',
   ghost:
     'bg-transparent text-content-secondary hover:bg-slate-100 active:bg-slate-200 border border-transparent',
   outline:
-    'bg-transparent text-[#3b5fa8] border border-[#3b5fa8] hover:bg-blue-50 active:bg-blue-100',
+    'bg-transparent text-brand-secondary border border-brand-secondary hover:bg-blue-50 active:bg-blue-100',
   danger:
     'bg-status-danger text-white hover:bg-red-600 active:bg-red-700 border border-transparent',
 };

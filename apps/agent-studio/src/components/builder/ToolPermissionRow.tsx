@@ -38,7 +38,7 @@ const ToolPermissionRow: React.FC<ToolPermissionRowProps> = ({ tool, onChange, o
             type="checkbox"
             checked={tool.permissions[perm]}
             onChange={() => togglePerm(perm)}
-            className="w-4 h-4 accent-[#3b5fa8] cursor-pointer"
+            className="w-4 h-4 accent-brand-secondary cursor-pointer"
           />
         </td>
       ))}

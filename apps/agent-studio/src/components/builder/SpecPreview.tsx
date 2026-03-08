@@ -5,6 +5,7 @@ import { useSpecStore } from '@store/specStore';
 
 const SpecPreview: React.FC<{ className?: string }> = ({ className }) => {
   const buildSpec = useSpecStore((s) => s.buildSpec);
+  const agentName = useSpecStore((s) => s.agentName);
   const goal = useSpecStore((s) => s.goal);
   const tools = useSpecStore((s) => s.tools);
   const contextSchema = useSpecStore((s) => s.contextSchema);
@@ -13,8 +14,8 @@ const SpecPreview: React.FC<{ className?: string }> = ({ className }) => {
   const policy = useSpecStore((s) => s.policy);
 
   const spec = useMemo(
-    () => buildSpec('Untitled Agent', '0.1.0', 'current-user'),
-    [buildSpec, goal, tools, contextSchema, scoring, constraints, policy]
+    () => buildSpec('0.1.0', 'current-user'),
+    [buildSpec, agentName, goal, tools, contextSchema, scoring, constraints, policy]
   );
 
   const [copied, setCopied] = React.useState(false);

@@ -1,57 +1,25 @@
 import React from 'react';
-import { cn, Button, EmptyState } from '@airaie/ui';
+import { cn, Button, EmptyState, Spinner } from '@airaie/ui';
 import { Plus, Pencil, Trash2, FlaskConical } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
-
-interface TestCase {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  criteria: {
-    min_actions?: number;
-    max_actions?: number;
-    min_score?: number;
-    max_cost?: number;
-    required_tools?: string[];
-    forbidden_tools?: string[];
-  };
-}
+import { useEvalCases, useDeleteEvalCase } from '@hooks/useEvals';
+import type { EvalCase } from '@hooks/useEvals';
 
 export interface GoldenDatasetManagerProps {
   onEdit: (id: string | null) => void;
   className?: string;
 }
 
-const storageKey = (agentId: string) => `airaie:evals:${agentId}`;
-
 const GoldenDatasetManager: React.FC<GoldenDatasetManagerProps> = ({ onEdit, className }) => {
   const agentId = useUIStore((s) => s.agentId);
-  const [testCases, setTestCases] = React.useState<TestCase[]>([]);
-
-  const load = React.useCallback(() => {
-    try {
-      const raw = localStorage.getItem(storageKey(agentId));
-      setTestCases(raw ? JSON.parse(raw) : []);
-    } catch {
-      setTestCases([]);
-    }
-  }, [agentId]);
-
-  React.useEffect(() => { load(); }, [load]);
-
-  // Re-load whenever the window regains focus (covers edits in the modal)
-  React.useEffect(() => {
-    window.addEventListener('focus', load);
-    return () => window.removeEventListener('focus', load);
-  }, [load]);
+  const { data: testCases, isLoading } = useEvalCases(agentId);
+  const deleteMutation = useDeleteEvalCase();
 
   const handleDelete = (id: string) => {
-    const next = testCases.filter((tc) => tc.id !== id);
-    localStorage.setItem(storageKey(agentId), JSON.stringify(next));
-    setTestCases(next);
+    deleteMutation.mutate({ agentId, evalId: id });
   };
 
-  const summarizeCriteria = (c: TestCase['criteria']): string => {
+  const summarizeCriteria = (c: EvalCase['criteria']): string => {
     const parts: string[] = [];
     if (c.min_actions != null) parts.push(`>=\u00a0${c.min_actions} actions`);
     if (c.max_actions != null) parts.push(`<=\u00a0${c.max_actions} actions`);
@@ -62,7 +30,13 @@ const GoldenDatasetManager: React.FC<GoldenDatasetManagerProps> = ({ onEdit, cla
     return parts.length ? parts.join(' | ') : 'None';
   };
 
-  if (testCases.length === 0) {
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Spinner /></div>;
+  }
+
+  const cases = testCases ?? [];
+
+  if (cases.length === 0) {
     return (
       <div className={cn('flex flex-col items-center gap-4 py-12', className)}>
         <EmptyState icon={FlaskConical} heading="No test cases yet" description="Add golden test cases to evaluate your agent." />
@@ -77,7 +51,7 @@ const GoldenDatasetManager: React.FC<GoldenDatasetManagerProps> = ({ onEdit, cla
     <div className={cn('space-y-3', className)}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-content-tertiary uppercase tracking-wider">
-          Golden Dataset ({testCases.length})
+          Golden Dataset ({cases.length})
         </span>
         <Button variant="ghost" size="sm" icon={Plus} onClick={() => onEdit(null)}>
           Add Test Case
@@ -94,11 +68,11 @@ const GoldenDatasetManager: React.FC<GoldenDatasetManagerProps> = ({ onEdit, cla
           </tr>
         </thead>
         <tbody>
-          {testCases.map((tc) => (
+          {cases.map((tc) => (
             <tr key={tc.id} className="border-t border-border-default hover:bg-surface-secondary/50">
               <td className="px-3 py-2 font-medium text-content-primary">{tc.name}</td>
               <td className="px-3 py-2 text-content-muted font-mono text-xs max-w-[200px] truncate">
-                {JSON.stringify(tc.input).slice(0, 60)}
+                {JSON.stringify(tc.inputs).slice(0, 60)}
               </td>
               <td className="px-3 py-2 text-content-secondary text-xs">{summarizeCriteria(tc.criteria)}</td>
               <td className="px-3 py-2 text-right">

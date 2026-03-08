@@ -17,16 +17,16 @@ export interface TemplateGalleryProps {
 
 // Mini preview: colored dots for cards, small lines for deps
 function TemplatePreview({ template }: { template: BoardTemplate }) {
-  const cardCount = template.cards?.length ?? 0;
-  const gateCount = template.gates?.length ?? 0;
+  const cardCount = template.cards_template?.length ?? 0;
+  const gateCount = template.gates_template?.length ?? 0;
 
   return (
     <div className="flex items-center gap-1 py-2">
       {Array.from({ length: Math.min(cardCount, 8) }).map((_, i) => (
         <div
           key={i}
-          className="w-2.5 h-2.5 rounded-full bg-[#3b5fa8] opacity-70"
-          title={template.cards?.[i]?.name}
+          className="w-2.5 h-2.5 rounded-full bg-brand-secondary opacity-70"
+          title={template.cards_template?.[i]?.title}
         />
       ))}
       {cardCount > 8 && (
@@ -39,7 +39,7 @@ function TemplatePreview({ template }: { template: BoardTemplate }) {
             <div
               key={i}
               className="w-2 h-2 rounded-sm bg-amber-400 opacity-70"
-              title={template.gates?.[i]?.name}
+              title={template.gates_template?.[i]?.name}
             />
           ))}
         </>
@@ -155,11 +155,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({ open, onClose }) => {
                   <div className="flex items-center gap-2">
                     <Badge variant="info">
                       <Layers size={10} className="mr-0.5" />
-                      {template.cards?.length ?? 0} cards
+                      {template.cards_template?.length ?? 0} cards
                     </Badge>
                     <Badge variant="warning">
                       <GitBranch size={10} className="mr-0.5" />
-                      {template.gates?.length ?? 0} gates
+                      {template.gates_template?.length ?? 0} gates
                     </Badge>
                   </div>
                 </Card.Body>

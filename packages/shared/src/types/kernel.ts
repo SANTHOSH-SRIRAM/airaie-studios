@@ -474,6 +474,47 @@ export interface KernelSandboxPolicy {
   archived_at?: string;
 }
 
+// --- Trigger Models ---
+
+export type TriggerType = 'cron' | 'webhook' | 'event';
+export type TriggerStatus = 'active' | 'paused' | 'disabled' | 'error';
+
+export interface KernelTrigger {
+  id: string;
+  workflow_id: string;
+  project_id: string;
+  name: string;
+  trigger_type: TriggerType;
+  status: TriggerStatus;
+  config: CronTriggerConfig | WebhookTriggerConfig | EventTriggerConfig;
+  last_fired_at?: string;
+  next_fire_at?: string;
+  fire_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CronTriggerConfig {
+  type: 'cron';
+  schedule: string;
+  timezone?: string;
+  inputs?: Record<string, unknown>;
+}
+
+export interface WebhookTriggerConfig {
+  type: 'webhook';
+  secret?: string;
+  url?: string;
+  allowed_ips?: string[];
+}
+
+export interface EventTriggerConfig {
+  type: 'event';
+  event_type: string;
+  filter?: Record<string, unknown>;
+  inputs_mapping?: Record<string, string>;
+}
+
 // --- Paginated Response ---
 
 export interface PaginatedResponse<T> {

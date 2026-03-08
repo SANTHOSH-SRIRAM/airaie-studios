@@ -90,7 +90,7 @@ const IntentSpecForm: React.FC<IntentSpecFormProps> = ({
                       type="checkbox"
                       checked={!!field.value}
                       onChange={(e) => field.onChange(e.target.checked)}
-                      className="w-4 h-4 border border-surface-border text-[#3b5fa8] focus:ring-brand-secondary"
+                      className="w-4 h-4 border border-surface-border text-brand-secondary focus:ring-brand-secondary"
                     />
                     <span className="text-sm text-content-primary">{param.label}</span>
                     {param.description && (

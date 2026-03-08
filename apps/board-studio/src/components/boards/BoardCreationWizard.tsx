@@ -9,6 +9,7 @@ import { Modal, Input, Button, Select, ProgressBar, Card, Spinner, Badge, EmptyS
 import {
   useCreateBoardFromIntent,
   useCreateBoardFromTemplate,
+  useVerticals,
   useIntentTypes,
   useBoardTemplates,
 } from '@hooks/useBoards';
@@ -21,6 +22,7 @@ export interface BoardCreationWizardProps {
   onClose: () => void;
   mode: 'quick' | 'guided';
   template?: BoardTemplate;
+  parentBoardId?: string;
 }
 
 // ============================================================
@@ -30,9 +32,11 @@ export interface BoardCreationWizardProps {
 function QuickCreate({
   template,
   onClose,
+  parentBoardId,
 }: {
   template: BoardTemplate;
   onClose: () => void;
+  parentBoardId?: string;
 }) {
   const navigate = useNavigate();
   const [name, setName] = useState(template.name);
@@ -44,7 +48,8 @@ function QuickCreate({
       {
         template_slug: template.slug,
         name: name.trim() || undefined,
-        description: description.trim() || undefined,
+        owner: 'studio-user',
+        parent_board_id: parentBoardId,
         parameters: {},
       },
       {
@@ -59,9 +64,9 @@ function QuickCreate({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 pb-3 border-b border-surface-border">
-        <Layers size={18} className="text-[#3b5fa8]" />
+        <Layers size={18} className="text-brand-secondary" />
         <span className="text-sm font-medium text-content-primary">
-          Quick Create from "{template.name}"
+          {parentBoardId ? 'Quick Create Sub-Board' : `Quick Create from "${template.name}"`}
         </span>
       </div>
 
@@ -119,9 +124,11 @@ const STEP_LABELS: Record<WizardStep, string> = {
 function GuidedWizard({
   onClose,
   initialTemplate,
+  parentBoardId,
 }: {
   onClose: () => void;
   initialTemplate?: BoardTemplate;
+  parentBoardId?: string;
 }) {
   const navigate = useNavigate();
   const [step, setStep] = useState<WizardStep>(1);
@@ -131,7 +138,8 @@ function GuidedWizard({
   const [description, setDescription] = useState('');
 
   // Step 2
-  const [verticalSlug, setVerticalSlug] = useState('hpc');
+  const { data: verticals, isLoading: verticalsLoading } = useVerticals();
+  const [verticalSlug, setVerticalSlug] = useState('');
   const [selectedIntentType, setSelectedIntentType] = useState<IntentType | null>(null);
   const { data: intentTypes, isLoading: intentTypesLoading } = useIntentTypes(verticalSlug);
 
@@ -154,7 +162,7 @@ function GuidedWizard({
       case 1:
         return !!name.trim();
       case 2:
-        return !!selectedIntentType;
+        return true; // intent type is optional — user can use a template instead
       case 3:
         return !!boardMode;
       case 4:
@@ -164,7 +172,7 @@ function GuidedWizard({
       default:
         return false;
     }
-  }, [step, name, selectedIntentType, boardMode]);
+  }, [step, name, boardMode]);
 
   const goNext = () => {
     if (step < 5) setStep((step + 1) as WizardStep);
@@ -181,7 +189,8 @@ function GuidedWizard({
         {
           template_slug: selectedTemplate.slug,
           name: name.trim(),
-          description: description.trim() || undefined,
+          owner: 'studio-user',
+          parent_board_id: parentBoardId,
           parameters: intentSpec,
         },
         {
@@ -192,13 +201,23 @@ function GuidedWizard({
         }
       );
     } else if (selectedIntentType && boardMode) {
+      // Map board mode to governance level
+      const governanceLevel =
+        boardMode === 'release' ? 'full' : boardMode === 'study' ? 'light' : 'none';
+
       fromIntentMutation.mutate(
         {
-          mode: boardMode,
-          intent_type_id: selectedIntentType.slug,
-          intent_spec: intentSpec,
           name: name.trim(),
           description: description.trim() || undefined,
+          parent_board_id: parentBoardId,
+          intent_spec: {
+            intent_type: selectedIntentType.slug,
+            goal: name.trim(),
+            inputs: [],
+            acceptance_criteria: [],
+            governance: { level: governanceLevel },
+            ...intentSpec,
+          },
         },
         {
           onSuccess: (board) => {
@@ -248,13 +267,13 @@ function GuidedWizard({
         {/* Step 2: Intent Type */}
         {step === 2 && (
           <div className="space-y-4">
+            <p className="text-xs text-content-muted">
+              Select an intent type to define the board's purpose, or skip to use a template in step 4.
+            </p>
             <Select
               label="Vertical"
-              options={[
-                { value: 'hpc', label: 'HPC' },
-                { value: 'stem', label: 'STEM' },
-                { value: 'manufacturing', label: 'Manufacturing' },
-              ]}
+              placeholder={verticalsLoading ? 'Loading verticals…' : 'Select a vertical'}
+              options={(verticals ?? []).map((v) => ({ value: v.slug, label: v.name }))}
               value={verticalSlug}
               onChange={(e) => {
                 setVerticalSlug(e.target.value);
@@ -277,7 +296,7 @@ function GuidedWizard({
                     onClick={() => setSelectedIntentType(it)}
                     className={`w-full text-left p-3 border transition-colors ${
                       selectedIntentType?.slug === it.slug
-                        ? 'border-[#3b5fa8] bg-blue-50'
+                        ? 'border-brand-secondary bg-blue-50'
                         : 'border-surface-border hover:bg-surface-hover'
                     }`}
                   >
@@ -288,7 +307,11 @@ function GuidedWizard({
               </div>
             )}
 
-            {!intentTypesLoading && (!intentTypes || intentTypes.length === 0) && (
+            {!verticalSlug && (
+              <p className="text-sm text-content-muted py-4">Select a vertical to see available intent types.</p>
+            )}
+
+            {verticalSlug && !intentTypesLoading && (!intentTypes || intentTypes.length === 0) && (
               <p className="text-sm text-content-muted py-4">No intent types found for this vertical.</p>
             )}
           </div>
@@ -314,7 +337,7 @@ function GuidedWizard({
               onClick={() => setSelectedTemplate(undefined)}
               className={`w-full text-left p-3 border transition-colors ${
                 !selectedTemplate
-                  ? 'border-[#3b5fa8] bg-blue-50'
+                  ? 'border-brand-secondary bg-blue-50'
                   : 'border-surface-border hover:bg-surface-hover'
               }`}
             >
@@ -337,15 +360,15 @@ function GuidedWizard({
                     onClick={() => setSelectedTemplate(t)}
                     className={`w-full text-left p-3 border transition-colors ${
                       selectedTemplate?.id === t.id
-                        ? 'border-[#3b5fa8] bg-blue-50'
+                        ? 'border-brand-secondary bg-blue-50'
                         : 'border-surface-border hover:bg-surface-hover'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium text-content-primary">{t.name}</div>
                       <div className="flex gap-1.5">
-                        <Badge variant="info">{t.cards?.length ?? 0} cards</Badge>
-                        <Badge variant="warning">{t.gates?.length ?? 0} gates</Badge>
+                        <Badge variant="info">{t.cards_template?.length ?? 0} cards</Badge>
+                        <Badge variant="warning">{t.gates_template?.length ?? 0} gates</Badge>
                       </div>
                     </div>
                     <div className="text-xs text-content-secondary mt-0.5">{t.description}</div>
@@ -396,7 +419,7 @@ function GuidedWizard({
             </div>
 
             {/* Intent spec form if intent type is selected */}
-            {selectedIntentType && selectedIntentType.parameters.length > 0 && (
+            {selectedIntentType && selectedIntentType.parameters?.length > 0 && (
               <div className="pt-3 border-t border-surface-border">
                 <h3 className="text-sm font-semibold text-content-primary mb-3">
                   Parameters for {selectedIntentType.name}
@@ -463,18 +486,23 @@ const BoardCreationWizard: React.FC<BoardCreationWizardProps> = ({
   onClose,
   mode,
   template,
+  parentBoardId,
 }) => {
+  const title = parentBoardId
+    ? mode === 'quick' ? 'Quick Create Sub-Board' : 'Create Sub-Board'
+    : mode === 'quick' ? 'Quick Create' : 'Create Board';
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={mode === 'quick' ? 'Quick Create' : 'Create Board'}
+      title={title}
       width={mode === 'quick' ? 'max-w-lg' : 'max-w-2xl'}
     >
       {mode === 'quick' && template ? (
-        <QuickCreate template={template} onClose={onClose} />
+        <QuickCreate template={template} onClose={onClose} parentBoardId={parentBoardId} />
       ) : (
-        <GuidedWizard onClose={onClose} initialTemplate={template} />
+        <GuidedWizard onClose={onClose} initialTemplate={template} parentBoardId={parentBoardId} />
       )}
     </Modal>
   );

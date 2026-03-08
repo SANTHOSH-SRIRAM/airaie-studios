@@ -1,5 +1,5 @@
 import { apiClient, ENDPOINTS } from '@airaie/shared';
-import type { KernelSession } from '@airaie/shared';
+import type { KernelSession, KernelRun, KernelApprovalRequest } from '@airaie/shared';
 
 export async function listSessions(agentId: string) {
   const { data } = await apiClient.get<KernelSession[]>(ENDPOINTS.AGENTS.SESSIONS(agentId));
@@ -16,22 +16,22 @@ export async function getSession(agentId: string, sessionId: string) {
   return data;
 }
 
-export async function runInSession(agentId: string, sessionId: string, body: { inputs: Record<string, unknown> }) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.SESSION_RUN(agentId, sessionId), body);
+export async function runInSession(agentId: string, sessionId: string, body: { inputs: Record<string, unknown> }): Promise<KernelRun> {
+  const { data } = await apiClient.post<KernelRun>(ENDPOINTS.AGENTS.SESSION_RUN(agentId, sessionId), body);
   return data;
 }
 
-export async function closeSession(agentId: string, sessionId: string) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.SESSION_CLOSE(agentId, sessionId));
+export async function closeSession(agentId: string, sessionId: string): Promise<KernelSession> {
+  const { data } = await apiClient.post<KernelSession>(ENDPOINTS.AGENTS.SESSION_CLOSE(agentId, sessionId));
   return data;
 }
 
-export async function sendMessage(agentId: string, sessionId: string, body: { content: string }) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.SESSION_MESSAGES(agentId, sessionId), body);
+export async function sendMessage(agentId: string, sessionId: string, body: { content: string }): Promise<KernelSession> {
+  const { data } = await apiClient.post<KernelSession>(ENDPOINTS.AGENTS.SESSION_MESSAGES(agentId, sessionId), body);
   return data;
 }
 
-export async function approveAction(agentId: string, sessionId: string, body: { action_id: string; decision: 'approve' | 'reject' }) {
-  const { data } = await apiClient.post(ENDPOINTS.AGENTS.SESSION_APPROVE(agentId, sessionId), body);
+export async function approveAction(agentId: string, sessionId: string, body: { action_id: string; decision: 'approve' | 'reject' }): Promise<KernelApprovalRequest> {
+  const { data } = await apiClient.post<KernelApprovalRequest>(ENDPOINTS.AGENTS.SESSION_APPROVE(agentId, sessionId), body);
   return data;
 }

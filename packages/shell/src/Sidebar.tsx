@@ -13,15 +13,19 @@ import SidebarSection from './SidebarSection';
 import SidebarItem from './SidebarItem';
 import UserCard from './UserCard';
 
+import type { SidebarSection as SidebarSectionType } from './types';
+
 interface SidebarProps {
   activeSidebarItem: string;
   onNavigate?: (path: string) => void;
+  sections?: SidebarSectionType[];
 }
 
-/** External URLs for each studio — used when navigating to a *different* studio */
+/** External URLs for each studio — used when navigating to a *different* studio.
+ *  Reads from VITE_ env vars at build time with localhost fallbacks for dev. */
 const STUDIO_URLS: Record<string, string> = {
-  workflows: 'http://localhost:3001',
-  agents: 'http://localhost:3002',
+  workflows: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_WORKFLOW_STUDIO_URL) || 'http://localhost:3001',
+  agents: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AGENT_STUDIO_URL) || 'http://localhost:3002',
 };
 
 const SECTIONS = [
@@ -68,14 +72,16 @@ const SECTIONS = [
   },
 ];
 
-export default function Sidebar({ activeSidebarItem, onNavigate }: SidebarProps) {
+export default function Sidebar({ activeSidebarItem, onNavigate, sections }: SidebarProps) {
+  const navSections = sections ?? SECTIONS;
+
   return (
-    <aside className="w-[230px] h-screen bg-sidebar-bg border-r border-surface-border flex flex-col shrink-0">
+    <aside className="w-[230px] h-screen bg-sidebar-bg border-r border-surface-border flex flex-col shrink-0" aria-label="Main navigation">
       {/* Logo */}
-      <div className="px-4 py-4 border-b border-surface-border">
+      <div className="h-[52px] px-4 border-b border-surface-border flex items-center">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-brand-secondary text-white flex items-center justify-center text-[10px] font-bold tracking-tight">
-            AC
+            A
           </div>
           <span className="text-sm font-bold text-content-primary tracking-wide">
             AIRAIE.CAD
@@ -84,8 +90,8 @@ export default function Sidebar({ activeSidebarItem, onNavigate }: SidebarProps)
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2 scrollbar-hide">
-        {SECTIONS.map((section) => (
+      <nav className="flex-1 overflow-y-auto py-2 scrollbar-hide" aria-label="Studio navigation">
+        {navSections.map((section) => (
           <SidebarSection key={section.id} label={section.label}>
             {section.items.map((item) => (
               <SidebarItem
@@ -95,13 +101,10 @@ export default function Sidebar({ activeSidebarItem, onNavigate }: SidebarProps)
                 bullet={'bullet' in item ? item.bullet : undefined}
                 active={activeSidebarItem === item.id}
                 onClick={() => {
-                  // If this item is a different studio, open it in a new tab
-                  const externalUrl = STUDIO_URLS[item.id];
-                  if (externalUrl && item.id !== activeSidebarItem) {
-                    window.open(externalUrl, '_blank');
-                  } else {
-                    onNavigate?.(item.path);
-                  }
+                  // Always route internally first — if the current studio has
+                  // a page for this item (e.g. /workflows), navigate there.
+                  // The page itself can link out to the full studio.
+                  if (item.path) onNavigate?.(item.path);
                 }}
               />
             ))}

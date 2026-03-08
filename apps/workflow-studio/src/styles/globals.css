@@ -9,6 +9,13 @@
     -webkit-font-smoothing: antialiased;
   }
   body { @apply bg-surface-bg text-content-primary; min-height: 100vh; }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+      linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }

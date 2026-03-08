@@ -2,12 +2,13 @@
 // BoardCard — grid view card for a single board
 // ============================================================
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Trash2 } from 'lucide-react';
 import { Card, Badge, cn, formatRelativeTime } from '@airaie/ui';
 import type { BadgeVariant, BadgeStyle } from '@airaie/ui';
 import type { Board, BoardMode } from '@/types/board';
+import { useDeleteBoard } from '@hooks/useBoards';
 import ReadinessBar from './ReadinessBar';
 
 export interface BoardCardProps {
@@ -51,8 +52,10 @@ function statusLabel(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-const BoardCard: React.FC<BoardCardProps> = ({ board, onExpand, expanded }) => {
+const BoardCard: React.FC<BoardCardProps> = React.memo(({ board, onExpand, expanded }) => {
   const navigate = useNavigate();
+  const deleteBoardMutation = useDeleteBoard();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const hasChildren = (board.children_count ?? 0) > 0;
 
   const handleClick = () => {
@@ -62,6 +65,16 @@ const BoardCard: React.FC<BoardCardProps> = ({ board, onExpand, expanded }) => {
   const handleExpandClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onExpand?.(board.id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirmDelete) {
+      deleteBoardMutation.mutate(board.id);
+    } else {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+    }
   };
 
   return (
@@ -92,17 +105,37 @@ const BoardCard: React.FC<BoardCardProps> = ({ board, onExpand, expanded }) => {
         </div>
 
         {/* Readiness */}
-        <ReadinessBar readiness={board.readiness} />
+        {board.readiness != null ? (
+          <ReadinessBar readiness={board.readiness} />
+        ) : (
+          <span className="text-xs text-content-muted">&mdash;</span>
+        )}
 
         {/* Footer row */}
         <div className="flex items-center justify-between text-xs text-content-secondary">
           <span>{statusLabel(board.status)}</span>
-          <span>{formatRelativeTime(board.updated_at)}</span>
+          <div className="flex items-center gap-2">
+            <span>{formatRelativeTime(board.updated_at)}</span>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className={cn(
+                'p-1 rounded-sm transition-colors opacity-0 group-hover:opacity-100',
+                confirmDelete
+                  ? 'text-red-600 bg-red-50 opacity-100'
+                  : 'text-content-muted hover:text-red-600'
+              )}
+              aria-label={confirmDelete ? 'Confirm delete' : 'Delete board'}
+              title={confirmDelete ? 'Click again to confirm' : 'Delete board'}
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
         </div>
       </Card.Body>
     </Card>
   );
-};
+});
 
 BoardCard.displayName = 'BoardCard';
 

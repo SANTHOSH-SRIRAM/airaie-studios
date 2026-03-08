@@ -42,6 +42,21 @@ export function useSendMessage() {
   });
 }
 
+/**
+ * Run the agent within a session — returns a KernelRun with an ID
+ * that can be streamed via useRunStream(). Use this for execution-mode
+ * interactions (non-dry-run) where you need live progress updates.
+ */
+export function useRunInSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, sessionId, inputs }: { agentId: string; sessionId: string; inputs: Record<string, unknown> }) =>
+      api.runInSession(agentId, sessionId, { inputs }),
+    onSuccess: (_, { agentId, sessionId }) =>
+      qc.invalidateQueries({ queryKey: KEYS.session(agentId, sessionId) }),
+  });
+}
+
 export function useCloseSession() {
   const qc = useQueryClient();
   return useMutation({
@@ -53,6 +68,7 @@ export function useCloseSession() {
 }
 
 export function useApproveAction() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
       agentId,
@@ -65,5 +81,7 @@ export function useApproveAction() {
       actionId: string;
       decision: 'approve' | 'reject';
     }) => api.approveAction(agentId, sessionId, { action_id: actionId, decision }),
+    onSuccess: (_, { agentId, sessionId }) =>
+      qc.invalidateQueries({ queryKey: KEYS.session(agentId, sessionId) }),
   });
 }

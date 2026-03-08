@@ -13,14 +13,14 @@ export interface ContextInputRowProps {
 
 const ContextInputRow: React.FC<ContextInputRowProps> = ({ field, onChange, onRemove }) => {
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 min-w-0">
       <input
         type="text"
         value={field.name}
         onChange={(e) => onChange({ ...field, name: e.target.value })}
         placeholder="field_name"
         className={cn(
-          'w-36 h-8 px-2 text-sm bg-white border border-surface-border rounded-none',
+          'min-w-0 w-1/4 h-8 px-2 text-sm bg-white border border-surface-border rounded-none',
           'focus:outline-none focus:ring-1 focus:ring-brand-secondary',
           'text-content-primary placeholder:text-content-muted'
         )}
@@ -29,7 +29,7 @@ const ContextInputRow: React.FC<ContextInputRowProps> = ({ field, onChange, onRe
         value={field.type}
         onChange={(e) => onChange({ ...field, type: e.target.value as SchemaFieldType })}
         className={cn(
-          'w-28 h-8 px-2 text-sm bg-white border border-surface-border rounded-none appearance-none',
+          'shrink-0 w-24 h-8 px-2 text-sm bg-white border border-surface-border rounded-none appearance-none',
           'focus:outline-none focus:ring-1 focus:ring-brand-secondary',
           'text-content-primary'
         )}
@@ -46,7 +46,7 @@ const ContextInputRow: React.FC<ContextInputRowProps> = ({ field, onChange, onRe
         onChange={(e) => onChange({ ...field, description: e.target.value })}
         placeholder="Description"
         className={cn(
-          'flex-1 h-8 px-2 text-sm bg-white border border-surface-border rounded-none',
+          'min-w-0 flex-1 h-8 px-2 text-sm bg-white border border-surface-border rounded-none',
           'focus:outline-none focus:ring-1 focus:ring-brand-secondary',
           'text-content-primary placeholder:text-content-muted'
         )}

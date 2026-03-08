@@ -5,25 +5,33 @@
 // --- Enums / Unions ---
 
 export type BoardMode = 'explore' | 'study' | 'release';
-export type BoardStatus = 'draft' | 'active' | 'completed' | 'archived';
+export type BoardStatus = string;
 export type CardStatus =
-  | 'pending'
+  | 'draft'
+  | 'ready'
+  | 'queued'
   | 'running'
   | 'completed'
   | 'failed'
   | 'blocked'
-  | 'skipped'
-  | 'waived'
-  | 'cancelled';
+  | 'skipped';
 export type CardType =
-  | 'simulation'
-  | 'optimization'
-  | 'validation'
-  | 'manufacturing'
   | 'analysis'
-  | 'custom'
-  | 'research';
-export type GateType = 'AutoGate' | 'ReviewGate' | 'ComplianceGate';
+  | 'comparison'
+  | 'sweep'
+  | 'agent'
+  | 'gate'
+  | 'milestone';
+export type GateType = 'evidence' | 'review' | 'compliance' | 'manufacturing' | 'exception';
+
+export const CARD_TYPE_LABELS: Record<CardType, string> = {
+  analysis: 'Analysis',
+  comparison: 'Comparison',
+  sweep: 'Parametric Sweep',
+  agent: 'Agent Task',
+  gate: 'Gate Card',
+  milestone: 'Milestone',
+};
 export type GateStatus = 'PENDING' | 'EVALUATING' | 'PASSED' | 'FAILED' | 'WAIVED';
 export type TrustLevel = 'CERTIFIED' | 'VERIFIED' | 'EXPERIMENTAL';
 
@@ -36,9 +44,11 @@ export interface Board {
   mode: BoardMode;
   status: BoardStatus;
   type: string;
+  vertical_id?: string;
   project_id: string;
+  owner?: string;
   parent_board_id?: string;
-  readiness: number;
+  readiness?: number;
   intent_spec?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -68,6 +78,7 @@ export interface Card {
   title?: string;
   description?: string;
   type: CardType;
+  intent_type?: string;
   status: CardStatus;
   ordinal: number;
   config: Record<string, unknown>;
@@ -77,6 +88,34 @@ export interface Card {
   completed_at?: string;
   created_at: string;
   updated_at: string;
+
+  // Execution lifecycle (populated from backend)
+  execution_plan_id?: string;
+  selected_tool?: {
+    slug: string;
+    version: string;
+    trust_level: string;
+    match_score: number;
+  };
+
+  // Cost & time
+  cost_estimate?: number;
+  time_estimate?: string;
+  actual_cost?: number;
+  actual_duration?: number;
+
+  // Evidence summary
+  evidence_summary?: {
+    total: number;
+    passed: number;
+    failed: number;
+    warnings: number;
+  };
+
+  // Preflight
+  preflight_status?: 'pending' | 'passed' | 'failed' | 'skipped';
+  preflight_blockers?: number;
+  preflight_warnings?: number;
 }
 
 export interface Gate {
@@ -86,6 +125,11 @@ export interface Gate {
   type: GateType;
   status: GateStatus;
   requirements: GateRequirement[];
+  // Audit trail timestamps (populated when backend supports history)
+  created_at?: string;
+  evaluated_at?: string;
+  approved_at?: string;
+  rejected_at?: string;
 }
 
 export interface GateRequirement {
@@ -127,6 +171,17 @@ export interface PlanStep {
   depends_on: string[];
 }
 
+// --- Verticals ---
+
+export interface Vertical {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  is_builtin: boolean;
+}
+
 // --- Templates & Intents ---
 
 export interface BoardTemplate {
@@ -135,33 +190,33 @@ export interface BoardTemplate {
   name: string;
   description: string;
   vertical_id: string;
-  cards: TemplateCard[];
-  gates: TemplateGate[];
-  parameters: TemplateParameter[];
+  mode: BoardMode;
+  is_builtin: boolean;
+  tags?: string[];
+  // Backend returns these field names
+  cards_template: TemplateCard[];
+  gates_template: TemplateGate[];
+  parameter_schema: Record<string, unknown>;
+  intent_spec_template: Record<string, unknown>;
 }
 
 export interface TemplateCard {
-  name: string;
-  type: CardType;
+  title: string;
+  card_type: string;
   description?: string;
+  order: number;
   config?: Record<string, unknown>;
+  kpis?: { metric_key: string; target_value: number; unit?: string; tolerance?: number }[];
   depends_on?: number[];
+  dependency_type?: string;
+  intent_type?: string;
 }
 
 export interface TemplateGate {
   name: string;
-  type: GateType;
-  requirements?: { name: string; description: string }[];
-}
-
-export interface TemplateParameter {
-  key: string;
-  label: string;
-  type: 'text' | 'number' | 'select' | 'boolean';
-  description?: string;
-  required?: boolean;
-  default_value?: unknown;
-  options?: string[];
+  gate_order: number;
+  requirements?: { req_type: string; description: string }[];
+  after_card?: number | null;
 }
 
 export interface IntentType {
@@ -228,14 +283,116 @@ export interface ReproducibilityScore {
   run_count: number;
 }
 
+// --- Board Records & Attachments ---
+
+export type RecordType = 'hypothesis' | 'decision' | 'requirement' | 'observation' | 'risk' | 'action_item';
+
+export interface BoardRecord {
+  id: string;
+  board_id: string;
+  type: RecordType;
+  content: string;
+  metadata?: Record<string, unknown>;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AttachmentKind = 'file' | 'link' | 'artifact' | 'evidence';
+
+export interface BoardAttachment {
+  id: string;
+  board_id: string;
+  kind: AttachmentKind;
+  name: string;
+  url?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
 // --- API query parameters ---
 
 export interface BoardListParams {
-  mode?: BoardMode;
-  status?: BoardStatus;
+  mode?: BoardMode | (string & {});
+  status?: BoardStatus | (string & {});
   type?: string;
   search?: string;
   sort?: string;
   sort_dir?: 'asc' | 'desc';
   parent_id?: string;
+  offset?: number;
+  limit?: number;
+}
+
+// --- Backend response types (used internally by API transformers) ---
+
+export interface BackendCard {
+  id: string;
+  board_id: string;
+  intent_spec_id?: string;
+  card_type: string;
+  title: string;
+  description: string;
+  status: string;
+  ordinal: number;
+  config?: Record<string, unknown>;
+  kpis?: { metric_key: string; target_value: number; unit?: string; tolerance?: number }[];
+  created_at: string;
+  updated_at: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
+export interface BackendCardGraphNode extends BackendCard {
+  depends_on: string[];
+  blocks: string[];
+}
+
+export interface BackendGate {
+  id: string;
+  board_id: string;
+  project_id: string;
+  name: string;
+  gate_type: string;
+  status: string;
+  description?: string;
+  metadata?: unknown;
+  evaluated_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BackendBoardSummary {
+  board_id: string;
+  mode: string;
+  card_stats: {
+    total: number;
+    draft: number;
+    ready: number;
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+    blocked: number;
+    skipped: number;
+  };
+  gate_stats: {
+    total: number;
+    passed: number;
+    failed: number;
+    pending: number;
+  };
+  readiness_scores: Record<string, number>;
+  overall_readiness: number;
+  next_actions?: {
+    priority: string;
+    category: string;
+    description: string;
+    card_id?: string;
+    gate_id?: string;
+  }[];
+  gates?: { name?: string; type?: string; status?: string }[];
+  child_summaries?: BackendBoardSummary[];
 }

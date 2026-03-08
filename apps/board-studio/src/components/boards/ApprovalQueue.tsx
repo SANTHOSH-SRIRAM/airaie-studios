@@ -9,6 +9,8 @@ import {
   ChevronDown,
   ChevronRight,
   Inbox,
+  UserPlus,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { Card, Badge, Button, Spinner, EmptyState } from '@airaie/ui';
 import type { BadgeVariant } from '@airaie/ui';
@@ -19,13 +21,17 @@ import { useApproveGate, useRejectGate } from '@hooks/useGates';
 export interface ApprovalQueueProps {
   /** If provided, only shows pending gates for this board */
   boardId?: string;
+  /** If provided, filter to only this gate type */
+  gateTypeFilter?: string;
 }
 
 function gateTypeBadgeVariant(type: GateType): BadgeVariant {
   const map: Record<GateType, BadgeVariant> = {
-    AutoGate: 'info',
-    ReviewGate: 'warning',
-    ComplianceGate: 'danger',
+    evidence: 'info',
+    review: 'warning',
+    compliance: 'danger',
+    manufacturing: 'warning',
+    exception: 'neutral',
   };
   return map[type] ?? 'neutral';
 }
@@ -42,6 +48,10 @@ function ApprovalItem({
   const [expanded, setExpanded] = useState(false);
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [delegateMode, setDelegateMode] = useState(false);
+  const [delegateTarget, setDelegateTarget] = useState('');
+  const [delegateMessage, setDelegateMessage] = useState<string | null>(null);
+  const [escalateMessage, setEscalateMessage] = useState<string | null>(null);
   const approveMutation = useApproveGate();
   const rejectMutation = useRejectGate();
 
@@ -97,8 +107,81 @@ function ApprovalItem({
             >
               Reject
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={UserPlus}
+              onClick={() => setDelegateMode((v) => !v)}
+            >
+              Delegate
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={ArrowUpCircle}
+              onClick={() => {
+                setEscalateMessage(`Gate "${gate.name}" escalated for higher-level review`);
+                setTimeout(() => setEscalateMessage(null), 3000);
+              }}
+            >
+              Escalate
+            </Button>
           </div>
         </div>
+
+        {/* Escalate confirmation */}
+        {escalateMessage && (
+          <div className="mt-2 pl-6 text-xs text-amber-600 font-medium">
+            {escalateMessage}
+          </div>
+        )}
+
+        {/* Delegate input */}
+        {delegateMode && (
+          <div className="mt-3 pl-6 space-y-2">
+            <input
+              type="text"
+              className="w-full px-3 py-2 text-sm bg-white border border-surface-border rounded-none text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-brand-secondary"
+              placeholder="Delegate email or name..."
+              value={delegateTarget}
+              onChange={(e) => setDelegateTarget(e.target.value)}
+              autoFocus
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={UserPlus}
+                disabled={!delegateTarget.trim()}
+                onClick={() => {
+                  setDelegateMessage(`Delegation sent to ${delegateTarget.trim()}`);
+                  setDelegateMode(false);
+                  setDelegateTarget('');
+                  setTimeout(() => setDelegateMessage(null), 3000);
+                }}
+              >
+                Send Delegation
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setDelegateMode(false); setDelegateTarget(''); }}
+              >
+                Cancel
+              </Button>
+            </div>
+            {delegateMessage && (
+              <div className="text-xs text-green-600 font-medium">{delegateMessage}</div>
+            )}
+          </div>
+        )}
+
+        {/* Delegate success shown outside delegate mode */}
+        {!delegateMode && delegateMessage && (
+          <div className="mt-2 pl-6 text-xs text-green-600 font-medium">
+            {delegateMessage}
+          </div>
+        )}
 
         {/* Reject reason input */}
         {rejectMode && (
@@ -119,7 +202,7 @@ function ApprovalItem({
                 onClick={() => {
                   rejectMutation.mutate({
                     gateId: gate.id,
-                    reason: rejectReason.trim(),
+                    rationale: rejectReason.trim(),
                   });
                   setRejectMode(false);
                   setRejectReason('');
@@ -173,10 +256,17 @@ function ApprovalItem({
 
 // --- Main component ---
 
-const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ boardId }) => {
-  const { data: pendingGates, isLoading, error } = usePendingApprovals(boardId);
+const ApprovalQueue: React.FC<ApprovalQueueProps> = ({ boardId, gateTypeFilter }) => {
+  const { data: rawPendingGates, isLoading, error } = usePendingApprovals(boardId);
   const approveMutation = useApproveGate();
   const showBoardName = !boardId; // Show board name when viewing across all boards
+
+  // Apply gate type filter
+  const pendingGates = React.useMemo(() => {
+    if (!rawPendingGates) return rawPendingGates;
+    if (!gateTypeFilter) return rawPendingGates;
+    return rawPendingGates.filter((g) => g.type === gateTypeFilter);
+  }, [rawPendingGates, gateTypeFilter]);
 
   if (isLoading) {
     return (

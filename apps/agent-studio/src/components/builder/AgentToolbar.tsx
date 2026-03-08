@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { cn, Button, Badge } from '@airaie/ui';
-import { CheckCircle, Save, Upload } from 'lucide-react';
+import { cn, Button, Badge, Select } from '@airaie/ui';
+import { CheckCircle, Save, Upload, Download } from 'lucide-react';
 import { useSpecStore } from '@store/specStore';
+import { useUIStore } from '@store/uiStore';
+import { useAgentVersions, useAgentVersion } from '@hooks/useAgents';
 
 export interface AgentToolbarProps {
   onValidate?: () => void;
@@ -17,7 +19,36 @@ const AgentToolbar: React.FC<AgentToolbarProps> = ({
   className,
 }) => {
   const isDirty = useSpecStore((s) => s.isDirty);
-  const [agentName, setAgentName] = useState('Untitled Agent');
+  const setSpec = useSpecStore((s) => s.setSpec);
+  const agentName = useSpecStore((s) => s.agentName);
+  const setAgentName = useSpecStore((s) => s.setAgentName);
+  const agentId = useUIStore((s) => s.agentId);
+  const { data: versions } = useAgentVersions(agentId);
+  const [selectedVersion, setSelectedVersion] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const versionOptions = [
+    { value: '', label: 'Load version...' },
+    ...(versions ?? []).map((v) => ({
+      value: String(v.version),
+      label: `v${v.version}${v.status === 'published' ? ' (published)' : ''}`,
+    })),
+  ];
+
+  const handleLoadVersion = async () => {
+    if (!selectedVersion || !agentId) return;
+    setLoading(true);
+    try {
+      const { getVersion } = await import('@api/agents');
+      const ver = await getVersion(agentId, Number(selectedVersion));
+      if (ver?.spec) {
+        setSpec(ver.spec as Record<string, unknown>);
+      }
+    } finally {
+      setLoading(false);
+      setSelectedVersion('');
+    }
+  };
 
   return (
     <div
@@ -34,7 +65,7 @@ const AgentToolbar: React.FC<AgentToolbarProps> = ({
         className={cn(
           'text-sm font-medium text-content-primary bg-transparent border-none',
           'focus:outline-none focus:ring-0 hover:bg-surface-hover px-1 py-0.5',
-          'w-48 truncate'
+          'min-w-0 max-w-[200px] truncate'
         )}
       />
 
@@ -47,6 +78,27 @@ const AgentToolbar: React.FC<AgentToolbarProps> = ({
       )}
 
       <div className="flex-1" />
+
+      {/* Load from version */}
+      {agentId && versions && versions.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Select
+            options={versionOptions}
+            value={selectedVersion}
+            onChange={(e) => setSelectedVersion(e.target.value)}
+            className="w-40 text-xs"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Download}
+            onClick={handleLoadVersion}
+            disabled={!selectedVersion || loading}
+            loading={loading}
+            title="Load spec from version"
+          />
+        </div>
+      )}
 
       {/* Action buttons */}
       <Button variant="outline" size="sm" icon={CheckCircle} onClick={onValidate}>

@@ -22,6 +22,7 @@ export const ENDPOINTS = {
     EVENTS: (id: string) => `/runs/${id}/events`,
     ARTIFACTS: (id: string) => `/runs/${id}/artifacts`,
     STREAM: (id: string) => `/runs/${id}/stream`,
+    TRACE: (id: string) => `/runs/${id}/trace`,
   },
 
   ARTIFACTS: {
@@ -51,6 +52,8 @@ export const ENDPOINTS = {
     SESSION_APPROVE: (id: string, sid: string) => `/agents/${id}/sessions/${sid}/approve`,
     MEMORIES: (id: string) => `/agents/${id}/memories`,
     MEMORY: (id: string, mid: string) => `/agents/${id}/memories/${mid}`,
+    EVALS: (id: string) => `/agents/${id}/evals`,
+    EVAL: (id: string, evalId: string) => `/agents/${id}/evals/${evalId}`,
   },
 
   GATES: {
@@ -104,5 +107,13 @@ export const ENDPOINTS = {
     GET: (id: string) => `/approvals/${id}`,
     APPROVE: (id: string) => `/approvals/${id}/approve`,
     REJECT: (id: string) => `/approvals/${id}/reject`,
+  },
+
+  TRIGGERS: {
+    LIST: (workflowId: string) => `/workflows/${workflowId}/triggers`,
+    GET: (workflowId: string, triggerId: string) => `/workflows/${workflowId}/triggers/${triggerId}`,
+    CREATE: (workflowId: string) => `/workflows/${workflowId}/triggers`,
+    UPDATE: (workflowId: string, triggerId: string) => `/workflows/${workflowId}/triggers/${triggerId}`,
+    DELETE: (workflowId: string, triggerId: string) => `/workflows/${workflowId}/triggers/${triggerId}`,
   },
 } as const;

@@ -25,6 +25,8 @@ const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
   className,
 }) => {
   const isDirty = useCanvasStore((s) => s.isDirty);
+  const versionNumber = useCanvasStore((s) => s.versionNumber);
+  const workflowId = useCanvasStore((s) => s.workflowId);
   const [workflowName, setWorkflowName] = useState('Untitled Workflow');
 
   return (
@@ -46,8 +48,8 @@ const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
         )}
       />
 
-      <Badge variant="info" badgeStyle="outline">
-        v0.1.0
+      <Badge variant={workflowId ? 'success' : 'info'} badgeStyle="outline">
+        {workflowId ? `v${versionNumber}` : 'unsaved'}
       </Badge>
 
       {isDirty && (
@@ -63,7 +65,7 @@ const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
           className={cn(
             'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
             mode === 'visual'
-              ? 'bg-[#3b5fa8] text-white'
+              ? 'bg-brand-secondary text-white'
               : 'bg-white text-content-secondary hover:bg-surface-hover'
           )}
         >
@@ -75,7 +77,7 @@ const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
           className={cn(
             'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
             mode === 'yaml'
-              ? 'bg-[#3b5fa8] text-white'
+              ? 'bg-brand-secondary text-white'
               : 'bg-white text-content-secondary hover:bg-surface-hover'
           )}
         >

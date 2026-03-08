@@ -4,7 +4,9 @@ import { Send } from 'lucide-react';
 import { usePlaygroundStore } from '@store/playgroundStore';
 import { useSpecStore } from '@store/specStore';
 import { useUIStore } from '@store/uiStore';
-import { useSendMessage, useApproveAction } from '@hooks/useSessions';
+import { useSendMessage, useApproveAction, useRunInSession } from '@hooks/useSessions';
+import { useRunStream } from '@hooks/useAgentRun';
+import type { RunEvent } from '@airaie/shared';
 import ChatMessage from './ChatMessage';
 import ProposalCard from './ProposalCard';
 import InputForm from './InputForm';
@@ -15,18 +17,24 @@ export interface AgentChatProps {
   className?: string;
 }
 
-let msgCounter = 0;
-
 const AgentChat: React.FC<AgentChatProps> = ({ selectedProposalId, onSelectProposal, className }) => {
+  const msgCounterRef = useRef(0);
+  const nextMsgId = () => `msg_${Date.now()}_${++msgCounterRef.current}`;
   const agentId = useUIStore((s) => s.agentId);
   const messages = usePlaygroundStore((s) => s.messages);
   const proposals = usePlaygroundStore((s) => s.proposals);
   const activeSessionId = usePlaygroundStore((s) => s.activeSessionId);
   const addMessage = usePlaygroundStore((s) => s.addMessage);
+  const addProposal = usePlaygroundStore((s) => s.addProposal);
   const isRunning = usePlaygroundStore((s) => s.isRunning);
+  const setRunning = usePlaygroundStore((s) => s.setRunning);
+  const dryRun = usePlaygroundStore((s) => s.dryRun);
+  const activeRunId = usePlaygroundStore((s) => s.activeRunId);
+  const setActiveRunId = usePlaygroundStore((s) => s.setActiveRunId);
   const contextSchema = useSpecStore((s) => s.contextSchema);
 
   const sendMessage = useSendMessage();
+  const runInSession = useRunInSession();
   const approveAction = useApproveAction();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,18 +45,110 @@ const AgentChat: React.FC<AgentChatProps> = ({ selectedProposalId, onSelectPropo
     }
   }, [messages, proposals]);
 
+  // Stream events from active run
+  const handleRunEvent = useCallback(
+    (event: RunEvent) => {
+      if (event.event_type === 'RUN_COMPLETED') {
+        const payload = event.payload as Record<string, unknown>;
+        const outputs = payload.outputs as Record<string, unknown> | undefined;
+        const response = outputs?.response ?? outputs?.result ?? outputs?.content;
+        if (response) {
+          addMessage({
+            id: nextMsgId(),
+            role: 'agent',
+            content: typeof response === 'string' ? response : JSON.stringify(response, null, 2),
+            timestamp: event.timestamp,
+          });
+        }
+        setRunning(false);
+        setActiveRunId(null);
+      } else if (event.event_type === 'RUN_FAILED') {
+        const payload = event.payload as Record<string, unknown>;
+        addMessage({
+          id: nextMsgId(),
+          role: 'system',
+          content: `Run failed: ${payload.error ?? 'Unknown error'}`,
+          timestamp: event.timestamp,
+        });
+        setRunning(false);
+        setActiveRunId(null);
+      } else if (event.event_type === 'RUN_CANCELED') {
+        setRunning(false);
+        setActiveRunId(null);
+      }
+    },
+    [addMessage, setRunning, setActiveRunId]
+  );
+
+  useRunStream(activeRunId, handleRunEvent);
+
   const handleSend = useCallback(() => {
     if (!input.trim() || !activeSessionId) return;
+    const content = input.trim();
     const msg = {
-      id: `msg_${Date.now()}_${++msgCounter}`,
+      id: nextMsgId(),
       role: 'user' as const,
-      content: input.trim(),
+      content,
       timestamp: new Date().toISOString(),
     };
     addMessage(msg);
     setInput('');
-    sendMessage.mutate({ agentId, sessionId: activeSessionId, content: msg.content });
-  }, [input, activeSessionId, agentId, addMessage, sendMessage]);
+    setRunning(true);
+
+    if (dryRun) {
+      // Dry run: use sendMessage (synchronous response with session update)
+      sendMessage.mutate(
+        { agentId, sessionId: activeSessionId, content },
+        {
+          onSuccess: (session) => {
+            // Extract agent reply from updated session history
+            const history = session.history as Array<{ role: string; content: string }> | undefined;
+            if (history?.length) {
+              const lastEntry = history[history.length - 1];
+              if (lastEntry.role === 'agent' || lastEntry.role === 'assistant') {
+                addMessage({
+                  id: nextMsgId(),
+                  role: 'agent',
+                  content: lastEntry.content,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            }
+            setRunning(false);
+          },
+          onError: (err) => {
+            addMessage({
+              id: nextMsgId(),
+              role: 'system',
+              content: `Error: ${(err as Error).message}`,
+              timestamp: new Date().toISOString(),
+            });
+            setRunning(false);
+          },
+        }
+      );
+    } else {
+      // Live execution: use runInSession to get a streamable run
+      runInSession.mutate(
+        { agentId, sessionId: activeSessionId, inputs: { message: content } },
+        {
+          onSuccess: (run) => {
+            // Set the active run ID — useRunStream will pick it up
+            setActiveRunId(run.id);
+          },
+          onError: (err) => {
+            addMessage({
+              id: nextMsgId(),
+              role: 'system',
+              content: `Error starting run: ${(err as Error).message}`,
+              timestamp: new Date().toISOString(),
+            });
+            setRunning(false);
+          },
+        }
+      );
+    }
+  }, [input, activeSessionId, agentId, dryRun, addMessage, setRunning, setActiveRunId, sendMessage, runInSession]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -59,14 +159,46 @@ const AgentChat: React.FC<AgentChatProps> = ({ selectedProposalId, onSelectPropo
 
   const handleInputFormSubmit = (values: Record<string, unknown>) => {
     const msg = {
-      id: `msg_${Date.now()}_${++msgCounter}`,
+      id: nextMsgId(),
       role: 'user' as const,
       content: JSON.stringify(values, null, 2),
       timestamp: new Date().toISOString(),
     };
     addMessage(msg);
+    setRunning(true);
+
     if (activeSessionId) {
-      sendMessage.mutate({ agentId, sessionId: activeSessionId, content: msg.content });
+      if (dryRun) {
+        sendMessage.mutate(
+          { agentId, sessionId: activeSessionId, content: msg.content },
+          {
+            onSuccess: (session) => {
+              const history = session.history as Array<{ role: string; content: string }> | undefined;
+              if (history?.length) {
+                const lastEntry = history[history.length - 1];
+                if (lastEntry.role === 'agent' || lastEntry.role === 'assistant') {
+                  addMessage({
+                    id: nextMsgId(),
+                    role: 'agent',
+                    content: lastEntry.content,
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+              }
+              setRunning(false);
+            },
+            onError: () => setRunning(false),
+          }
+        );
+      } else {
+        runInSession.mutate(
+          { agentId, sessionId: activeSessionId, inputs: values },
+          {
+            onSuccess: (run) => setActiveRunId(run.id),
+            onError: () => setRunning(false),
+          }
+        );
+      }
     }
   };
 
@@ -114,6 +246,12 @@ const AgentChat: React.FC<AgentChatProps> = ({ selectedProposalId, onSelectPropo
             })()}
           </React.Fragment>
         ))}
+        {isRunning && (
+          <div className="flex items-center gap-2 px-3 py-2 text-xs text-content-muted">
+            <div className="w-2 h-2 bg-brand-secondary rounded-full animate-pulse" />
+            Agent is thinking...
+          </div>
+        )}
       </div>
 
       {/* Input bar */}

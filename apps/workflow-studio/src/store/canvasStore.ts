@@ -28,6 +28,8 @@ interface CanvasState {
   panY: number;
   dslYaml: string;
   isDirty: boolean;
+  workflowId: string | null;
+  versionNumber: number;
 
   addNode: (node: CanvasNode) => void;
   updateNode: (id: string, partial: Partial<CanvasNode>) => void;
@@ -40,6 +42,7 @@ interface CanvasState {
   setPan: (x: number, y: number) => void;
   setDslYaml: (yaml: string) => void;
   setDirty: (dirty: boolean) => void;
+  setWorkflow: (workflowId: string, versionNumber: number) => void;
   clearCanvas: () => void;
 }
 
@@ -53,6 +56,8 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   panY: 0,
   dslYaml: '',
   isDirty: false,
+  workflowId: null,
+  versionNumber: 0,
 
   addNode: (node) =>
     set((s) => {
@@ -95,6 +100,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   setPan: (panX, panY) => set({ panX, panY }),
   setDslYaml: (dslYaml) => set({ dslYaml, isDirty: true }),
   setDirty: (isDirty) => set({ isDirty }),
+  setWorkflow: (workflowId, versionNumber) => set({ workflowId, versionNumber }),
   clearCanvas: () =>
     set({
       nodes: new Map(),
@@ -106,5 +112,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       panY: 0,
       dslYaml: '',
       isDirty: false,
+      workflowId: null,
+      versionNumber: 0,
     }),
 }));

@@ -17,10 +17,10 @@ export default function UserCard() {
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <button className="p-1.5 text-content-muted hover:text-content-primary transition-colors">
+          <button className="p-1.5 text-content-muted hover:text-content-primary transition-colors" aria-label="Settings">
             <Settings size={14} />
           </button>
-          <button className="p-1.5 text-content-muted hover:text-content-primary transition-colors">
+          <button className="p-1.5 text-content-muted hover:text-content-primary transition-colors" aria-label="Log out">
             <LogOut size={14} />
           </button>
         </div>

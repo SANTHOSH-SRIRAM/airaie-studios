@@ -8,6 +8,8 @@ import {
   ShieldCheck,
   ScrollText,
   Eye,
+  Tags,
+  ShieldOff,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -18,6 +20,8 @@ export type AgentSection =
   | 'scoring'
   | 'constraints'
   | 'policy'
+  | 'domain-tags'
+  | 'denied-capabilities'
   | 'preview';
 
 interface SectionItem {
@@ -33,6 +37,8 @@ const sections: SectionItem[] = [
   { id: 'scoring', label: 'Scoring', icon: BarChart3 },
   { id: 'constraints', label: 'Constraints', icon: ShieldCheck },
   { id: 'policy', label: 'Policy', icon: ScrollText },
+  { id: 'domain-tags', label: 'Domain Tags', icon: Tags },
+  { id: 'denied-capabilities', label: 'Denied Caps', icon: ShieldOff },
   { id: 'preview', label: 'Preview', icon: Eye },
 ];
 
@@ -50,7 +56,7 @@ const AgentSectionNav: React.FC<AgentSectionNavProps> = ({
   return (
     <div
       className={cn(
-        'w-[240px] flex-shrink-0 border-r border-surface-border bg-white overflow-y-auto',
+        'w-full bg-white overflow-y-auto',
         className
       )}
     >
@@ -73,12 +79,12 @@ const AgentSectionNav: React.FC<AgentSectionNavProps> = ({
                 'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors',
                 'border-l-2',
                 isActive
-                  ? 'border-l-[#3b5fa8] bg-blue-50/50 text-[#3b5fa8] font-medium'
+                  ? 'border-l-brand-secondary bg-blue-50 text-brand-secondary font-medium'
                   : 'border-l-transparent text-content-secondary hover:bg-surface-hover hover:text-content-primary'
               )}
             >
-              <Icon size={16} />
-              {section.label}
+              <Icon size={16} className="shrink-0" />
+              <span className="truncate">{section.label}</span>
             </button>
           );
         })}

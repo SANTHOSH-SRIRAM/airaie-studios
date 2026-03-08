@@ -9,8 +9,42 @@ export { apiClient, setProjectId, getProjectId } from './api/client';
 export type { APIError } from './api/client';
 export { createRunStream } from './api/sse';
 
+// Auth
+export {
+  getAccessToken,
+  setAccessToken,
+  getRefreshToken,
+  setRefreshToken,
+  setTokens,
+  clearTokens,
+  onTokenExpired,
+  notifyTokenExpired,
+  isAuthenticated,
+} from './auth/tokenStore';
+
+// Query
+export { defaultQueryConfig } from './query/queryConfig';
+
+// Realtime
+export { getEventManager, destroyEventManager } from './realtime/eventManager';
+export type { EventCallback, ConnectionStatus } from './realtime/eventManager';
+// useRealtimeRun, useRealtimeAll removed — never imported by any studio
+
+// Shared API
+export { listRuns, getRun, getRunLogs, cancelRun } from './api/runs';
+export type { RunListParams } from './api/runs';
+
+// Shared Hooks
+export { useRuns, useRun, useRunLogs, useCancelRun, runKeys } from './hooks/useRuns';
+
 // Constants
 export { ENDPOINTS } from './constants/api';
 
+// Schemas (Zod)
+export * from './schemas/requests';
+
 // Utils
 export { toUiRunStatus, toUiNodeRunStatus, calcElapsedSeconds } from './utils/statusMap';
+export { isSafeUrl, safeOpen } from './utils/urlValidation';
+export { validateAgentRunResponse } from './utils/responseValidation';
+export type { ValidationResult } from './utils/responseValidation';

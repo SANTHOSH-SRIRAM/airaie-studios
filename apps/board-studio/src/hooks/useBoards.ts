@@ -10,7 +10,9 @@ import {
   fetchBoardChildren,
   createBoardFromIntent,
   createBoardFromTemplate,
+  deleteBoard,
   fetchBoardTemplates,
+  fetchVerticals,
   fetchIntentTypes,
 } from '@api/boards';
 import type { BoardListParams } from '@/types/board';
@@ -27,6 +29,7 @@ export const boardKeys = {
   summary: (id: string) => [...boardKeys.summaries(), id] as const,
   children: (id: string) => [...boardKeys.all, 'children', id] as const,
   templates: () => ['board-templates'] as const,
+  verticals: () => ['verticals'] as const,
   intentTypes: (verticalSlug: string) => ['intent-types', verticalSlug] as const,
 };
 
@@ -85,12 +88,29 @@ export function useCreateBoardFromTemplate() {
   });
 }
 
+export function useDeleteBoard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteBoard(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: boardKeys.all });
+    },
+  });
+}
+
 // --- Templates & Intent Types ---
 
 export function useBoardTemplates() {
   return useQuery({
     queryKey: boardKeys.templates(),
-    queryFn: fetchBoardTemplates,
+    queryFn: () => fetchBoardTemplates(),
+  });
+}
+
+export function useVerticals() {
+  return useQuery({
+    queryKey: boardKeys.verticals(),
+    queryFn: fetchVerticals,
   });
 }
 

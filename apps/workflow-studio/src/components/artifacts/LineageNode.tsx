@@ -28,9 +28,9 @@ const LineageNode: React.FC<LineageNodeProps> = ({ label, x, y, isActive, onClic
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         fill="white"
-        stroke={isActive ? 'var(--color-brand-secondary)' : '#d1d5db'}
+        stroke={isActive ? '#1e40af' : '#e2e8f0'}
         strokeWidth={isActive ? 2 : 1}
-        className="transition-colors hover:stroke-[#9ca3af]"
+        className="transition-colors hover:stroke-[#94a3b8]"
       />
       <text
         x={x + NODE_WIDTH / 2}

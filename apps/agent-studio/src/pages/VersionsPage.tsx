@@ -22,26 +22,28 @@ export default function VersionsPage() {
 
   if (view === 'diff' && diffVersions) {
     return (
-      <div className="p-6 h-full">
-        <PromptDiff
-          versionA={diffVersions[0]}
-          versionB={diffVersions[1]}
-          onBack={() => setView('list')}
-          className="h-full"
-        />
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto p-6">
+          <PromptDiff
+            versionA={diffVersions[0]}
+            versionB={diffVersions[1]}
+            onBack={() => setView('list')}
+          />
+        </div>
       </div>
     );
   }
 
   if (view === 'ab' && abVersions) {
     return (
-      <div className="p-6 h-full">
-        <ABEvalPanel
-          versionA={abVersions[0]}
-          versionB={abVersions[1]}
-          onBack={() => setView('list')}
-          className="h-full"
-        />
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto p-6">
+          <ABEvalPanel
+            versionA={abVersions[0]}
+            versionB={abVersions[1]}
+            onBack={() => setView('list')}
+          />
+        </div>
       </div>
     );
   }

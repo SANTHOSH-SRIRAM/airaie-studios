@@ -42,7 +42,7 @@ const categories: NodeCategory[] = [
   },
   {
     label: 'Board',
-    color: '#3b82f6',
+    color: '#1e40af',
     templates: [
       { type: 'board', label: 'Task Board', icon: LayoutGrid, defaultConfig: { boardType: 'task' } },
       { type: 'board', label: 'Sub-Workflow', icon: GitBranch, defaultConfig: { boardType: 'sub_workflow' } },
@@ -76,7 +76,7 @@ const categories: NodeCategory[] = [
   },
 ];
 
-const NodePalette: React.FC<{ className?: string }> = ({ className }) => {
+const NodePalette: React.FC<{ className?: string }> = React.memo(({ className }) => {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const toggle = (label: string) => {
@@ -126,7 +126,7 @@ const NodePalette: React.FC<{ className?: string }> = ({ className }) => {
       })}
     </div>
   );
-};
+});
 
 NodePalette.displayName = 'NodePalette';
 

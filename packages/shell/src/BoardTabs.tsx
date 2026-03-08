@@ -23,13 +23,15 @@ export default function BoardTabs({ tabs, studioName }: BoardTabsProps) {
           </h1>
         </div>
       )}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" role="tablist" aria-label={studioName ? `${studioName} navigation` : 'Studio navigation'}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
               onClick={() => navigate(tab.path)}
               className={cn(
                 'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2',

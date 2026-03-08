@@ -20,16 +20,18 @@ const ProposalInspector: React.FC<ProposalInspectorProps> = ({ selectedProposalI
   const proposal = proposals.find((p) => p.id === selectedProposalId);
   const approveAction = useApproveAction();
 
-  const handleApproveAll = () => {
+  const handleApproveAll = async () => {
     if (!activeSessionId || !proposal) return;
-    proposal.actions.forEach((action) => {
-      approveAction.mutate({ agentId, sessionId: activeSessionId, actionId: action.action_id, decision: 'approve' });
-    });
+    for (const action of proposal.actions) {
+      await approveAction.mutateAsync({ agentId, sessionId: activeSessionId, actionId: action.action_id, decision: 'approve' });
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!activeSessionId || !proposal) return;
-    approveAction.mutate({ agentId, sessionId: activeSessionId, actionId: proposal.id, decision: 'reject' });
+    for (const action of proposal.actions) {
+      await approveAction.mutateAsync({ agentId, sessionId: activeSessionId, actionId: action.action_id, decision: 'reject' });
+    }
   };
 
   if (!proposal) {

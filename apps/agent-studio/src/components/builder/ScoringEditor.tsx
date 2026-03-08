@@ -51,7 +51,7 @@ const ScoringEditor: React.FC<{ className?: string }> = ({ className }) => {
                 step={0.05}
                 value={scoring.weights[key]}
                 onChange={(e) => handleWeightChange(key, parseFloat(e.target.value))}
-                className="w-full h-1.5 accent-[#3b5fa8] cursor-pointer"
+                className="w-full h-1.5 accent-brand-secondary cursor-pointer"
               />
             </div>
           ))}

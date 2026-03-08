@@ -14,6 +14,21 @@ export default defineConfig({
       '@pages': path.resolve(__dirname, './src/pages'),
     },
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'zustand', '@tanstack/react-query', 'axios', 'lucide-react', 'clsx'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'state': ['zustand', '@tanstack/react-query'],
+          'charts': ['@airaie/charts', 'recharts'],
+          'ui': ['@airaie/ui', '@airaie/shell', 'lucide-react'],
+        },
+      },
+    },
+  },
   server: {
     port: 3003,
     proxy: {

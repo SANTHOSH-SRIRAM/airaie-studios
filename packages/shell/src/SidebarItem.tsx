@@ -20,6 +20,7 @@ export default function SidebarItem({
   return (
     <button
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={cn(
         'flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors duration-150 cursor-pointer',
         active

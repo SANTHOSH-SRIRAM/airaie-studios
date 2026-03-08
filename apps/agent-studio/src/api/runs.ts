@@ -1,22 +1,16 @@
+// Common run API functions are now in @airaie/shared (listRuns, getRun, getRunLogs, cancelRun)
+// This file only keeps agent-studio-specific API functions.
+
 import { apiClient, ENDPOINTS } from '@airaie/shared';
-import type { KernelRun, KernelNodeRun } from '@airaie/shared';
+import type { KernelAuditEvent } from '@airaie/shared';
 
-export async function listRuns(params?: { status?: string; limit?: number; offset?: number }) {
-  const { data } = await apiClient.get<KernelRun[]>(ENDPOINTS.RUNS.LIST, { params });
+export async function getRunEvents(id: string): Promise<KernelAuditEvent[]> {
+  const { data } = await apiClient.get<KernelAuditEvent[]>(ENDPOINTS.RUNS.EVENTS(id));
   return data;
 }
 
-export async function getRun(id: string) {
-  const { data } = await apiClient.get<KernelRun>(ENDPOINTS.RUNS.GET(id));
-  return data;
-}
-
-export async function getRunLogs(id: string) {
-  const { data } = await apiClient.get<KernelNodeRun[]>(ENDPOINTS.RUNS.LOGS(id));
-  return data;
-}
-
-export async function getRunEvents(id: string) {
-  const { data } = await apiClient.get(ENDPOINTS.RUNS.EVENTS(id));
+export async function getRunTrace(id: string, verbosity?: 'minimal' | 'normal' | 'verbose') {
+  const params = verbosity ? { verbosity } : undefined;
+  const { data } = await apiClient.get<KernelAuditEvent[]>(ENDPOINTS.RUNS.TRACE(id), { params });
   return data;
 }

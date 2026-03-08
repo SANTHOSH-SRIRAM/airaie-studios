@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { cn, Button, Badge, StatusBadge, Spinner, EmptyState } from '@airaie/ui';
+import type { RunStatus } from '@airaie/ui';
 import { CheckCircle, Upload, GitCompare, FlaskConical } from 'lucide-react';
 import { formatRelativeTime } from '@airaie/ui';
 import type { KernelAgentVersion } from '@airaie/shared';
 import { useUIStore } from '@store/uiStore';
 import { useAgentVersions, useValidateAgentVersion, usePublishAgentVersion } from '@hooks/useAgents';
 
-const statusVariant: Record<string, string> = {
+const statusVariant: Record<string, RunStatus> = {
   draft: 'pending',
   validated: 'running',
   published: 'completed',
@@ -74,7 +75,7 @@ const AgentVersionsList: React.FC<AgentVersionsListProps> = ({ onDiff, onABEval,
             {versions.map((v) => (
               <tr key={v.id} className="hover:bg-surface-hover">
                 <td className="px-4 py-2.5 font-mono">#{v.version}</td>
-                <td className="px-4 py-2.5"><StatusBadge status={(statusVariant[v.status] || 'pending') as any} /></td>
+                <td className="px-4 py-2.5"><StatusBadge status={statusVariant[v.status] || 'pending'} /></td>
                 <td className="px-4 py-2.5 text-content-secondary">{formatRelativeTime(v.id)}</td>
                 <td className="px-4 py-2.5 text-right">
                   <div className="flex items-center justify-end gap-1">

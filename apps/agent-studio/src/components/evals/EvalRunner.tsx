@@ -4,20 +4,8 @@ import { Play } from 'lucide-react';
 import { useUIStore } from '@store/uiStore';
 import { useRunAgent } from '@hooks/useAgentRun';
 import { useAgentVersions } from '@hooks/useAgents';
-
-interface TestCase {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-  criteria: {
-    min_actions?: number;
-    max_actions?: number;
-    min_score?: number;
-    max_cost?: number;
-    required_tools?: string[];
-    forbidden_tools?: string[];
-  };
-}
+import { useEvalCases } from '@hooks/useEvals';
+import type { EvalCase } from '@hooks/useEvals';
 
 interface EvalResult {
   testCaseId: string;
@@ -33,9 +21,7 @@ export interface EvalRunnerProps {
   className?: string;
 }
 
-const storageKey = (agentId: string) => `airaie:evals:${agentId}`;
-
-const evaluate = (tc: TestCase, res: { score: number; cost: number; actionCount: number; toolsUsed: string[] }): EvalResult => {
+const evaluate = (tc: EvalCase, res: { score: number; cost: number; actionCount: number; toolsUsed: string[] }): EvalResult => {
   const failures: string[] = [];
   const c = tc.criteria;
   if (c.min_actions != null && res.actionCount < c.min_actions) failures.push(`actions ${res.actionCount} < min ${c.min_actions}`);
@@ -56,6 +42,7 @@ const evaluate = (tc: TestCase, res: { score: number; cost: number; actionCount:
 const EvalRunner: React.FC<EvalRunnerProps> = ({ onResults, className }) => {
   const agentId = useUIStore((s) => s.agentId);
   const { data: versions } = useAgentVersions(agentId);
+  const { data: evalCases } = useEvalCases(agentId);
   const runAgent = useRunAgent();
 
   const [version, setVersion] = React.useState('');
@@ -68,9 +55,9 @@ const EvalRunner: React.FC<EvalRunnerProps> = ({ onResults, className }) => {
     ...(versions ?? []).map((v) => ({ value: String(v.version), label: `v${v.version}` })),
   ];
 
+  const cases = evalCases ?? [];
+
   const handleRun = async () => {
-    let cases: TestCase[];
-    try { cases = JSON.parse(localStorage.getItem(storageKey(agentId)) ?? '[]'); } catch { cases = []; }
     if (!cases.length || !version) return;
 
     setRunning(true);
@@ -80,13 +67,13 @@ const EvalRunner: React.FC<EvalRunnerProps> = ({ onResults, className }) => {
     for (let i = 0; i < cases.length; i++) {
       const tc = cases[i];
       try {
-        const res = await runAgent.mutateAsync({ agentId, version: Number(version), inputs: tc.input, dryRun: true });
+        const res = await runAgent.mutateAsync({ agentId, version: Number(version), inputs: tc.inputs, dryRun: true });
         const outputs = (res.outputs ?? {}) as Record<string, unknown>;
         collected.push(evaluate(tc, {
           score: (outputs.score as number) ?? 0,
           cost: res.cost_actual ?? res.cost_estimate ?? 0,
           actionCount: ((outputs.actions as unknown[])?.length) ?? 0,
-          toolsUsed: ((outputs.actions as Array<{ tool: string }>)?.map((a) => a.tool)) ?? [],
+          toolsUsed: (Array.isArray(outputs.actions) ? outputs.actions.filter((a): a is { tool: string } => a != null && typeof a === 'object' && typeof (a as Record<string, unknown>).tool === 'string').map((a) => a.tool) : []),
         }));
       } catch (err) {
         collected.push({ testCaseId: tc.id, passed: false, score: 0, cost: 0, actionCount: 0, details: `Error: ${(err as Error).message}` });
@@ -105,8 +92,8 @@ const EvalRunner: React.FC<EvalRunnerProps> = ({ onResults, className }) => {
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center gap-3">
         <Select options={versionOptions} value={version} onChange={(e) => setVersion(e.target.value)} className="w-44" />
-        <Button variant="primary" size="sm" icon={Play} onClick={handleRun} disabled={running || !version}>
-          {running ? 'Running...' : 'Run All Tests'}
+        <Button variant="primary" size="sm" icon={Play} onClick={handleRun} disabled={running || !version || cases.length === 0}>
+          {running ? 'Running...' : `Run All Tests (${cases.length})`}
         </Button>
         {running && <Spinner size="sm" />}
       </div>
@@ -133,8 +120,6 @@ const EvalRunner: React.FC<EvalRunnerProps> = ({ onResults, className }) => {
             </thead>
             <tbody>
               {results.map((r) => {
-                let cases: TestCase[];
-                try { cases = JSON.parse(localStorage.getItem(storageKey(agentId)) ?? '[]'); } catch { cases = []; }
                 const tc = cases.find((t) => t.id === r.testCaseId);
                 return (
                   <tr key={r.testCaseId} className="border-t border-border-default">

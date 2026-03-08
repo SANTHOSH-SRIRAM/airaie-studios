@@ -21,6 +21,7 @@ export default function SidebarSection({
     <div className="mb-1">
       <button
         onClick={() => collapsible && setOpen(!open)}
+        aria-expanded={collapsible ? open : undefined}
         className={cn(
           'flex items-center justify-between w-full px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-content-muted',
           collapsible && 'hover:text-content-secondary cursor-pointer'
@@ -30,7 +31,7 @@ export default function SidebarSection({
         {collapsible &&
           (open ? <ChevronDown size={12} /> : <ChevronRight size={12} />)}
       </button>
-      {open && <div className="px-2">{children}</div>}
+      {open && <div role="group" aria-label={label} className="px-2">{children}</div>}
     </div>
   );
 }

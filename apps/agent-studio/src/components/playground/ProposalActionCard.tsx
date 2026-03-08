@@ -7,7 +7,7 @@ export interface ProposalActionCardProps {
   action: ProposedAction;
 }
 
-const ProposalActionCard: React.FC<ProposalActionCardProps> = ({ action }) => {
+const ProposalActionCard: React.FC<ProposalActionCardProps> = React.memo(({ action }) => {
   const perms = [
     action.permissions.read && 'R',
     action.permissions.write && 'W',
@@ -39,7 +39,7 @@ const ProposalActionCard: React.FC<ProposalActionCardProps> = ({ action }) => {
       )}
     </div>
   );
-};
+});
 
 ProposalActionCard.displayName = 'ProposalActionCard';
 

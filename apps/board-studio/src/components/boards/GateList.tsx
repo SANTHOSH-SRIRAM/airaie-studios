@@ -14,7 +14,7 @@ import {
 import { Card, Badge, Button, ProgressBar, Spinner, EmptyState } from '@airaie/ui';
 import type { BadgeVariant } from '@airaie/ui';
 import type { Gate, GateType, GateStatus, GateRequirement } from '@/types/board';
-import { useGates, useApproveGate, useRejectGate, useWaiveGate } from '@hooks/useGates';
+import { useGates, useEvaluateGate, useApproveGate, useRejectGate, useWaiveGate } from '@hooks/useGates';
 
 export interface GateListProps {
   boardId: string;
@@ -24,9 +24,11 @@ export interface GateListProps {
 
 function gateTypeBadgeVariant(type: GateType): BadgeVariant {
   const map: Record<GateType, BadgeVariant> = {
-    AutoGate: 'info',
-    ReviewGate: 'warning',
-    ComplianceGate: 'danger',
+    evidence: 'info',
+    review: 'warning',
+    compliance: 'danger',
+    manufacturing: 'warning',
+    exception: 'neutral',
   };
   return map[type] ?? 'neutral';
 }
@@ -82,12 +84,18 @@ function RequirementRow({ req }: { req: GateRequirement }) {
 function GateRow({ gate }: { gate: Gate }) {
   const [expanded, setExpanded] = useState(false);
   const [waiveConfirm, setWaiveConfirm] = useState(false);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const evaluateMutation = useEvaluateGate();
   const approveMutation = useApproveGate();
   const rejectMutation = useRejectGate();
   const waiveMutation = useWaiveGate();
 
+  const isAutoGate = gate.type === 'evidence';
+  const canEvaluate = isAutoGate && (gate.status === 'PENDING' || gate.status === 'FAILED');
+
   const isReviewable =
-    (gate.type === 'ReviewGate' || gate.type === 'ComplianceGate') &&
+    (gate.type === 'review' || gate.type === 'compliance') &&
     gate.status === 'PENDING';
 
   return (
@@ -140,6 +148,19 @@ function GateRow({ gate }: { gate: Gate }) {
 
           {/* Actions */}
           <div className="mt-4 flex items-center gap-2">
+            {canEvaluate && (
+              <Button
+                variant="primary"
+                size="sm"
+                loading={evaluateMutation.isPending}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  evaluateMutation.mutate(gate.id);
+                }}
+              >
+                Evaluate
+              </Button>
+            )}
             {isReviewable && (
               <>
                 <Button
@@ -153,21 +174,52 @@ function GateRow({ gate }: { gate: Gate }) {
                 >
                   Approve
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-300 hover:bg-red-50"
-                  loading={rejectMutation.isPending}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    rejectMutation.mutate({
-                      gateId: gate.id,
-                      reason: 'Rejected via gate list',
-                    });
-                  }}
-                >
-                  Reject
-                </Button>
+                {!rejectMode ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRejectMode(true);
+                    }}
+                  >
+                    Reject
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      placeholder="Reason..."
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      className="px-2 py-1 text-xs border border-surface-border bg-white outline-none focus:border-red-400 w-40"
+                      autoFocus
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-300"
+                      loading={rejectMutation.isPending}
+                      disabled={!rejectReason.trim()}
+                      onClick={() => {
+                        rejectMutation.mutate(
+                          { gateId: gate.id, rationale: rejectReason.trim() },
+                          { onSuccess: () => { setRejectMode(false); setRejectReason(''); } }
+                        );
+                      }}
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setRejectMode(false); setRejectReason(''); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </>
             )}
             {gate.status !== 'WAIVED' && gate.status !== 'PASSED' && (
@@ -183,7 +235,7 @@ function GateRow({ gate }: { gate: Gate }) {
                       loading={waiveMutation.isPending}
                       onClick={(e) => {
                         e.stopPropagation();
-                        waiveMutation.mutate({ gateId: gate.id });
+                        waiveMutation.mutate({ gateId: gate.id, rationale: 'Waived by reviewer' });
                         setWaiveConfirm(false);
                       }}
                     >
@@ -276,7 +328,7 @@ const GateList: React.FC<GateListProps> = ({ boardId }) => {
         </div>
         <ProgressBar
           value={percent}
-          color={percent === 100 ? 'bg-green-600' : 'bg-[#3b5fa8]'}
+          color={percent === 100 ? 'bg-green-600' : 'bg-brand-secondary'}
         />
       </div>
 

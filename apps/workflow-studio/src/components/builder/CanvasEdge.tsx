@@ -44,7 +44,7 @@ const CanvasEdgeComponent: React.FC<CanvasEdgeProps> = ({
       <path
         d={d}
         fill="none"
-        stroke={isSelected ? '#3b82f6' : '#cbd5e1'}
+        stroke={isSelected ? '#1e40af' : '#cbd5e1'}
         strokeWidth={isSelected ? 2.5 : 2}
         className="pointer-events-none transition-colors"
       />

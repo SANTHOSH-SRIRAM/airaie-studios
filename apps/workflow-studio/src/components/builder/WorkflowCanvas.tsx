@@ -21,7 +21,7 @@ function nextEdgeId() {
   return `edge_${++edgeIdCounter}_${Date.now()}`;
 }
 
-const WorkflowCanvas: React.FC<{ className?: string }> = ({ className }) => {
+const WorkflowCanvas: React.FC<{ className?: string }> = React.memo(({ className }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const zoom = useCanvasStore((s) => s.zoom);
   const panX = useCanvasStore((s) => s.panX);
@@ -245,7 +245,7 @@ const WorkflowCanvas: React.FC<{ className?: string }> = ({ className }) => {
       <CanvasControls />
     </div>
   );
-};
+});
 
 WorkflowCanvas.displayName = 'WorkflowCanvas';
 

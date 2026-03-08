@@ -103,6 +103,13 @@ function boardDataToCsv(data: {
   return lines.join('\n');
 }
 
+/** Escape user-supplied text for safe HTML injection */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function csvEscape(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -155,11 +162,29 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         return;
       }
 
-      // Fallback: client-side export
+      // Fallback: client-side export (including PDF via print dialog)
       if (selected === 'pdf') {
-        setMessage(
-          'PDF export requires backend support -- coming soon.'
-        );
+        try {
+          const [board, summary, cards, gates] = await Promise.all([
+            fetchBoard(boardId),
+            fetchBoardSummary(boardId).catch(() => null),
+            fetchCards(boardId).catch(() => []),
+            fetchGates(boardId).catch(() => []),
+          ]);
+          // Generate a printable HTML report and open the browser's print/PDF dialog
+          const html = generatePdfHtml(board, summary, cards, gates);
+          const win = window.open('', '_blank');
+          if (win) {
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+            win.print();
+          }
+          setSuccess(true);
+          setMessage('PDF print dialog opened. Use "Save as PDF" to export.');
+        } catch (pdfErr) {
+          setMessage(`PDF export failed: ${pdfErr instanceof Error ? pdfErr.message : 'Unknown error'}`);
+        }
         setExporting(false);
         return;
       }
@@ -224,7 +249,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
                 hover
                 className={`cursor-pointer transition-all ${
                   isSelected
-                    ? 'ring-2 ring-[#3b5fa8] border-[#3b5fa8]'
+                    ? 'ring-2 ring-brand-secondary border-brand-secondary'
                     : ''
                 }`}
                 onClick={() => {
@@ -238,7 +263,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                       isSelected
-                        ? 'border-[#3b5fa8] bg-[#3b5fa8]'
+                        ? 'border-brand-secondary bg-brand-secondary'
                         : 'border-slate-300'
                     }`}
                   >
@@ -294,6 +319,46 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
     </Modal>
   );
 };
+
+/** Generate a printable HTML document for PDF export via browser print dialog */
+function generatePdfHtml(
+  board: Board,
+  summary: BoardSummary | null,
+  cards: CardType[],
+  gates: Gate[]
+): string {
+  const readiness = summary?.overall_readiness ?? 0;
+  const cardRows = cards.map(c =>
+    `<tr><td>${escapeHtml(c.name ?? '')}</td><td>${escapeHtml(c.type ?? '')}</td><td>${escapeHtml(c.status ?? '')}</td></tr>`
+  ).join('');
+  const gateRows = gates.map(g =>
+    `<tr><td>${escapeHtml(g.name ?? '')}</td><td>${escapeHtml(g.type ?? '')}</td><td>${escapeHtml(g.status ?? '')}</td><td>${g.requirements?.filter(r => r.satisfied).length ?? 0}/${g.requirements?.length ?? 0}</td></tr>`
+  ).join('');
+
+  return `<!DOCTYPE html><html><head><title>${escapeHtml(board.name ?? '')} — Board Report</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;color:#1a1a1a}
+h1{font-size:1.5rem;margin-bottom:.25rem}
+h2{font-size:1.1rem;margin-top:1.5rem;border-bottom:1px solid #ddd;padding-bottom:.25rem}
+table{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.85rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eee}
+th{background:#f5f5f5;font-weight:600}
+.meta{color:#666;font-size:.85rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:.75rem;font-weight:600}
+.readiness{font-size:2rem;font-weight:700;color:#2563eb}
+@media print{body{margin:0.5in}}
+</style></head><body>
+<h1>${escapeHtml(board.name ?? '')}</h1>
+<p class="meta">Mode: ${escapeHtml(board.mode ?? '')} · Status: ${escapeHtml(board.status ?? '')} · Exported: ${new Date().toLocaleString()}</p>
+<h2>Readiness</h2>
+<p class="readiness">${Math.round(readiness)}%</p>
+<p class="meta">${summary?.card_progress.completed ?? 0}/${summary?.card_progress.total ?? 0} cards completed · ${summary?.gate_count ?? 0} gates</p>
+<h2>Cards (${cards.length})</h2>
+<table><thead><tr><th>Name</th><th>Type</th><th>Status</th></tr></thead><tbody>${cardRows || '<tr><td colspan="3">No cards</td></tr>'}</tbody></table>
+<h2>Gates (${gates.length})</h2>
+<table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Requirements</th></tr></thead><tbody>${gateRows || '<tr><td colspan="4">No gates</td></tr>'}</tbody></table>
+</body></html>`;
+}
 
 ExportDialog.displayName = 'ExportDialog';
 

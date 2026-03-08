@@ -2,11 +2,12 @@
 // PreflightResults — Preflight validation results display
 // ============================================================
 
-import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, Play } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, XCircle, AlertTriangle, Play, Wrench } from 'lucide-react';
 import { Card, Badge, Button, Spinner, Tooltip } from '@airaie/ui';
-import { usePlan, useValidatePlan } from '@hooks/usePlan';
+import { usePlan, useEditPlan, useValidatePlan } from '@hooks/usePlan';
 import type { ValidatorResult } from '@api/plans';
+import axios from 'axios';
 
 export interface PreflightResultsProps {
   cardId: string | undefined;
@@ -14,8 +15,40 @@ export interface PreflightResultsProps {
 
 // --- Validator result row ---
 
-function ValidatorRow({ result }: { result: ValidatorResult }) {
+function ValidatorRow({
+  result,
+  cardId,
+  onFixApplied,
+}: {
+  result: ValidatorResult;
+  cardId: string | undefined;
+  onFixApplied: () => void;
+}) {
   const passed = result.status === 'pass';
+  const editPlan = useEditPlan(cardId);
+  const [fixError, setFixError] = useState<string | null>(null);
+
+  const handleApplyFix = () => {
+    if (!cardId || !result.auto_fix) return;
+    setFixError(null);
+    editPlan.mutate(
+      { auto_fix: result.name },
+      {
+        onSuccess: () => {
+          onFixApplied();
+        },
+        onError: (err) => {
+          if (axios.isAxiosError(err) && err.response?.status === 503) {
+            setFixError('Auto-fix requires the plan service to be running');
+          } else {
+            setFixError(
+              err instanceof Error ? err.message : 'Failed to apply fix'
+            );
+          }
+        },
+      }
+    );
+  };
 
   return (
     <div className="flex items-start gap-2 py-2 border-b border-surface-border last:border-0">
@@ -45,12 +78,22 @@ function ValidatorRow({ result }: { result: ValidatorResult }) {
             <span className="text-xs text-content-muted italic">
               Suggested fix: {result.auto_fix}
             </span>
-            <Tooltip content="Coming soon" side="top">
-              <Button variant="ghost" size="sm" disabled className="text-[10px] h-5 px-1.5">
-                Apply Fix
-              </Button>
-            </Tooltip>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Wrench}
+              className="text-[10px] h-5 px-1.5"
+              loading={editPlan.isPending}
+              onClick={handleApplyFix}
+            >
+              Apply Fix
+            </Button>
           </div>
+        )}
+
+        {/* Fix error message */}
+        {fixError && (
+          <div className="text-xs text-status-danger mt-1">{fixError}</div>
         )}
       </div>
     </div>
@@ -60,8 +103,15 @@ function ValidatorRow({ result }: { result: ValidatorResult }) {
 // --- Main component ---
 
 const PreflightResults: React.FC<PreflightResultsProps> = ({ cardId }) => {
-  const { data: plan, isLoading } = usePlan(cardId);
+  const { data: plan, isLoading, refetch: refetchPlan } = usePlan(cardId);
   const validatePlan = useValidatePlan(cardId);
+
+  const handleFixApplied = () => {
+    // Re-validate after applying a fix, then refetch the plan
+    validatePlan.mutate(undefined, {
+      onSettled: () => refetchPlan(),
+    });
+  };
 
   if (isLoading) {
     return (
@@ -142,7 +192,7 @@ const PreflightResults: React.FC<PreflightResultsProps> = ({ cardId }) => {
             {/* Per-validator results */}
             <div className="divide-y divide-surface-border">
               {preflight.validators.map((v, i) => (
-                <ValidatorRow key={i} result={v} />
+                <ValidatorRow key={i} result={v} cardId={cardId} onFixApplied={handleFixApplied} />
               ))}
             </div>
 

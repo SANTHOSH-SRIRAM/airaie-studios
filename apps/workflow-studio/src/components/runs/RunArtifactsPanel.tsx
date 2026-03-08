@@ -3,6 +3,7 @@ import { cn, Spinner } from '@airaie/ui';
 import { Download } from 'lucide-react';
 import { formatBytes } from '@airaie/ui';
 import { useRunArtifacts } from '@hooks/useRuns';
+import { safeOpen } from '@airaie/shared';
 import * as artifactsApi from '@api/artifacts';
 
 export interface RunArtifactsPanelProps {
@@ -15,7 +16,7 @@ const RunArtifactsPanel: React.FC<RunArtifactsPanelProps> = ({ runId, className 
 
   const handleDownload = async (artifactId: string) => {
     const { download_url } = await artifactsApi.getDownloadURL(artifactId);
-    window.open(download_url, '_blank');
+    safeOpen(download_url, '_blank');
   };
 
   if (isLoading) {

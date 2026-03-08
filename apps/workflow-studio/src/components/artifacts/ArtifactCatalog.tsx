@@ -3,6 +3,7 @@ import { cn, Spinner, EmptyState, Button, Input, Select } from '@airaie/ui';
 import { formatBytes, formatRelativeTime } from '@airaie/ui';
 import { Search, Download, GitBranch, Package } from 'lucide-react';
 import { useArtifacts } from '@hooks/useArtifacts';
+import { safeOpen } from '@airaie/shared';
 import { getDownloadURL } from '@api/artifacts';
 
 export interface ArtifactCatalogProps {
@@ -46,7 +47,7 @@ const ArtifactCatalog: React.FC<ArtifactCatalogProps> = ({
   const handleDownload = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const { download_url } = await getDownloadURL(id);
-    window.open(download_url, '_blank');
+    safeOpen(download_url, '_blank');
   };
 
   const handleLineage = (e: React.MouseEvent, id: string) => {

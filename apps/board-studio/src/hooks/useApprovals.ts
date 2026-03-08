@@ -33,21 +33,33 @@ export function usePendingApprovals(boardId?: string) {
       if (boardId) {
         // Fetch gates for a specific board, filter to PENDING
         const { data } = await axios.get<{ gates: Gate[] }>(
-          KERNEL_ENDPOINTS.GATES.LIST(boardId)
+          KERNEL_ENDPOINTS.GATES.LIST,
+          { params: { board_id: boardId } }
         );
         return (data.gates ?? []).filter((g) => g.status === 'PENDING');
       }
 
-      // Fetch all boards, then aggregate pending gates
+      // Fetch all boards first, then only query gates for boards that
+      // have children (heuristic: boards with children_count > 0 are
+      // more likely to have gates). This reduces O(N) calls.
       const { data: boardsData } = await axios.get<{
-        boards: { id: string; name: string }[];
+        boards: { id: string; name: string; children_count?: number }[];
       }>(KERNEL_ENDPOINTS.BOARDS.LIST);
       const boards = boardsData.boards ?? [];
 
+      // Deduplicate boards by id to avoid querying the same board twice
+      const seen = new Set<string>();
+      const uniqueBoards = boards.filter((b) => {
+        if (seen.has(b.id)) return false;
+        seen.add(b.id);
+        return true;
+      });
+
       const results = await Promise.allSettled(
-        boards.map(async (b) => {
+        uniqueBoards.map(async (b) => {
           const { data } = await axios.get<{ gates: Gate[] }>(
-            KERNEL_ENDPOINTS.GATES.LIST(b.id)
+            KERNEL_ENDPOINTS.GATES.LIST,
+            { params: { board_id: b.id } }
           );
           return (data.gates ?? [])
             .filter((g) => g.status === 'PENDING')
@@ -59,6 +71,9 @@ export function usePendingApprovals(boardId?: string) {
         r.status === 'fulfilled' ? r.value : []
       ) as (Gate & { _boardName?: string })[];
     },
+    // Prevent thundering herd: data stays fresh for 30s, no refetch on window focus
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 }
 

@@ -10,8 +10,12 @@ import RunArtifactsPanel from '@components/runs/RunArtifactsPanel';
 import RunCostBreakdown from '@components/runs/RunCostBreakdown';
 import StartRunDialog from '@components/runs/StartRunDialog';
 
-export default function RunsPage() {
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+interface RunsPageProps {
+  initialRunId?: string;
+}
+
+export default function RunsPage({ initialRunId }: RunsPageProps) {
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(initialRunId ?? null);
   const [showStartDialog, setShowStartDialog] = useState(false);
 
   const workflowId = useUIStore((s) => s.workflowId);

@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useState, useCallback } from 'react';
-import { LayoutGrid, List, Plus, AlertCircle, ClipboardList } from 'lucide-react';
+import { LayoutGrid, List, Plus, AlertCircle, ClipboardList, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, Select, EmptyState, Spinner, cn } from '@airaie/ui';
 import type { SelectOption } from '@airaie/ui';
 import { useBoardUIStore } from '@store/boardStore';
@@ -12,6 +12,7 @@ import BoardCard from '@components/boards/BoardCard';
 import BoardTableRow from '@components/boards/BoardTableRow';
 import BoardFilters from '@components/boards/BoardFilters';
 import SubBoardTree from '@components/boards/SubBoardTree';
+import AnalyticsSummaryCards from '@components/boards/AnalyticsSummaryCards';
 
 // Lazy-loaded creation wizard (loaded in Task 3)
 const TemplateGallery = React.lazy(() => import('@components/boards/TemplateGallery'));
@@ -61,18 +62,27 @@ function SkeletonTable() {
 
 // --- Main page ---
 
+const PAGE_SIZE = 12;
+
 export default function BoardsPage() {
-  const { viewMode, setViewMode, sortBy, setSortBy, sortDir, activeFilters } = useBoardUIStore();
+  const { viewMode, setViewMode, sortBy, setSortBy, sortDir, setSortDir, activeFilters } = useBoardUIStore();
   const [expandedBoards, setExpandedBoards] = useState<Set<string>>(new Set());
   const [showGallery, setShowGallery] = useState(false);
+  const [page, setPage] = useState(0);
+
+  // Reset page when filters change
+  const filterKey = `${activeFilters.mode}-${activeFilters.status}-${activeFilters.type}-${activeFilters.search}-${sortBy}-${sortDir}`;
+  React.useEffect(() => { setPage(0); }, [filterKey]);
 
   const { data: boards, isLoading, isError, refetch } = useBoards({
-    mode: activeFilters.mode as any,
-    status: activeFilters.status as any,
+    mode: activeFilters.mode,
+    status: activeFilters.status,
     type: activeFilters.type,
     search: activeFilters.search,
     sort: sortBy,
     sort_dir: sortDir,
+    offset: page * PAGE_SIZE,
+    limit: PAGE_SIZE,
   });
 
   const toggleExpand = useCallback((boardId: string) => {
@@ -89,6 +99,9 @@ export default function BoardsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Analytics summary */}
+      <AnalyticsSummaryCards />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-content-primary">Boards</h1>
@@ -103,12 +116,23 @@ export default function BoardsPage() {
 
         <div className="flex items-center gap-3">
           {/* Sort */}
-          <Select
-            options={sortOptions}
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            wrapperClassName="w-40"
-          />
+          <div className="flex items-center gap-1">
+            <Select
+              options={sortOptions}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              wrapperClassName="w-40"
+            />
+            <button
+              type="button"
+              onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+              className="p-2 text-content-muted hover:text-content-primary transition-colors border border-surface-border"
+              aria-label={`Sort ${sortDir === 'asc' ? 'descending' : 'ascending'}`}
+              title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
+            >
+              {sortDir === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+            </button>
+          </div>
 
           {/* View toggle */}
           <div className="flex items-center border border-surface-border">
@@ -244,6 +268,35 @@ export default function BoardsPage() {
             </table>
           </div>
         )
+      )}
+
+      {/* Pagination */}
+      {!isLoading && !isError && boards && boards.length > 0 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-content-tertiary">
+            Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + boards.length} boards
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={ChevronLeft}
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={ChevronRight}
+              disabled={boards.length < PAGE_SIZE}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Template gallery modal (loaded lazily) */}

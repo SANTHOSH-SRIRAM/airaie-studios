@@ -15,6 +15,8 @@ interface PlaygroundState {
   proposals: ActionProposal[];
   dryRun: boolean;
   isRunning: boolean;
+  /** Active run ID — used for SSE streaming + step debugger */
+  activeRunId: string | null;
 
   setActiveSession: (id: string | null) => void;
   addMessage: (msg: ChatMessage) => void;
@@ -23,6 +25,7 @@ interface PlaygroundState {
   clearProposals: () => void;
   setDryRun: (dryRun: boolean) => void;
   setRunning: (running: boolean) => void;
+  setActiveRunId: (runId: string | null) => void;
   reset: () => void;
 }
 
@@ -32,6 +35,7 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
   proposals: [],
   dryRun: true,
   isRunning: false,
+  activeRunId: null,
 
   setActiveSession: (activeSessionId) => set({ activeSessionId }),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
@@ -40,6 +44,7 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
   clearProposals: () => set({ proposals: [] }),
   setDryRun: (dryRun) => set({ dryRun }),
   setRunning: (isRunning) => set({ isRunning }),
+  setActiveRunId: (activeRunId) => set({ activeRunId }),
   reset: () =>
     set({
       activeSessionId: null,
@@ -47,5 +52,6 @@ export const usePlaygroundStore = create<PlaygroundState>((set) => ({
       proposals: [],
       dryRun: true,
       isRunning: false,
+      activeRunId: null,
     }),
 }));

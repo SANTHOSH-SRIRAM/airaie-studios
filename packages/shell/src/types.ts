@@ -25,8 +25,14 @@ export interface SidebarSection {
 
 export interface AppShellProps {
   studioName?: string;
-  activeSidebarItem: string;
+  activeSidebarItem?: string;
+  /** Tab-based navigation (agent/workflow studios) */
   boardTabs?: BoardTab[];
+  /** Sidebar sections — when provided, renders sidebar + header layout */
   sidebarSections?: SidebarSection[];
+  /** Router navigate callback for sidebar navigation */
+  onNavigate?: (path: string) => void;
+  /** Show the header bar (used with sidebar layout) */
+  showHeader?: boolean;
   children: React.ReactNode;
 }
