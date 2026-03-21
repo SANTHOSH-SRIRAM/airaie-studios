@@ -11,13 +11,16 @@ import {
   ChevronRight,
   Wrench,
   Clock,
+  ArrowRight,
 } from 'lucide-react';
 import { Badge } from '@airaie/ui';
 import type { PreflightResult, PreflightCheck, PreflightBlocker, PreflightWarning } from '@/types/execution';
+import { getFixSuggestion } from '@/constants/preflightFixMap';
 
 export interface PreflightReportProps {
   result: PreflightResult;
   onAutoFix?: (checkName: string, fixAction: string) => void;
+  onNavigateToInput?: (fieldKey: string) => void;
 }
 
 // --- Blocker card ---
@@ -25,10 +28,14 @@ export interface PreflightReportProps {
 function BlockerCard({
   blocker,
   onAutoFix,
+  onNavigateToInput,
 }: {
   blocker: PreflightBlocker;
   onAutoFix?: (checkName: string, fixAction: string) => void;
+  onNavigateToInput?: (fieldKey: string) => void;
 }) {
+  const fix = getFixSuggestion(blocker.check_name);
+
   return (
     <div className="flex items-start gap-2 p-2.5 border border-red-200 bg-red-50/50">
       <XCircle size={14} className="text-red-600 shrink-0 mt-0.5" />
@@ -45,6 +52,21 @@ function BlockerCard({
             Auto-fix: {blocker.auto_fix}
           </button>
         )}
+        {fix && (
+          <div className="text-[10px] text-red-600 italic mt-1">
+            {fix.suggestion}
+          </div>
+        )}
+        {fix?.inputField && onNavigateToInput && (
+          <button
+            type="button"
+            onClick={() => onNavigateToInput(fix.inputField!)}
+            className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 mt-1 font-medium"
+          >
+            <ArrowRight size={10} />
+            Go to Inputs &gt; {fix.inputLabel}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -55,10 +77,14 @@ function BlockerCard({
 function WarningCard({
   warning,
   onAutoFix,
+  onNavigateToInput,
 }: {
   warning: PreflightWarning;
   onAutoFix?: (checkName: string, fixAction: string) => void;
+  onNavigateToInput?: (fieldKey: string) => void;
 }) {
+  const fix = getFixSuggestion(warning.check_name);
+
   return (
     <div className="flex items-start gap-2 p-2.5 border border-amber-200 bg-amber-50/50">
       <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
@@ -69,6 +95,21 @@ function WarningCard({
           <div className="text-[10px] text-amber-600 italic mt-1">
             Suggestion: {warning.suggestion}
           </div>
+        )}
+        {fix && !warning.suggestion && (
+          <div className="text-[10px] text-amber-600 italic mt-1">
+            {fix.suggestion}
+          </div>
+        )}
+        {fix?.inputField && onNavigateToInput && (
+          <button
+            type="button"
+            onClick={() => onNavigateToInput(fix.inputField!)}
+            className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 mt-1 font-medium"
+          >
+            <ArrowRight size={10} />
+            Go to Inputs &gt; {fix.inputLabel}
+          </button>
         )}
       </div>
     </div>
@@ -91,14 +132,15 @@ function PassedRow({ check }: { check: PreflightCheck }) {
 
 // --- Main component ---
 
-const PreflightReport: React.FC<PreflightReportProps> = ({ result, onAutoFix }) => {
+const PreflightReport: React.FC<PreflightReportProps> = ({ result, onAutoFix, onNavigateToInput }) => {
   const [passedExpanded, setPassedExpanded] = useState(false);
 
-  const blockers = result.blockers;
-  const warnings = result.warnings;
-  const passedChecks = result.checks.filter((c) => c.status === 'pass');
-  const failedChecks = result.checks.filter((c) => c.status === 'fail');
-  const warnChecks = result.checks.filter((c) => c.status === 'warn');
+  const blockers = result.blockers ?? [];
+  const warnings = result.warnings ?? [];
+  const checks = result.checks ?? [];
+  const passedChecks = checks.filter((c) => c.status === 'pass');
+  const failedChecks = checks.filter((c) => c.status === 'fail');
+  const warnChecks = checks.filter((c) => c.status === 'warn');
 
   return (
     <div className="space-y-3">
@@ -149,7 +191,7 @@ const PreflightReport: React.FC<PreflightReportProps> = ({ result, onAutoFix }) 
             Blockers ({blockers.length})
           </div>
           {blockers.map((b, i) => (
-            <BlockerCard key={i} blocker={b} onAutoFix={onAutoFix} />
+            <BlockerCard key={i} blocker={b} onAutoFix={onAutoFix} onNavigateToInput={onNavigateToInput} />
           ))}
         </div>
       )}
@@ -162,7 +204,7 @@ const PreflightReport: React.FC<PreflightReportProps> = ({ result, onAutoFix }) 
             Warnings ({warnings.length})
           </div>
           {warnings.map((w, i) => (
-            <WarningCard key={i} warning={w} onAutoFix={onAutoFix} />
+            <WarningCard key={i} warning={w} onAutoFix={onAutoFix} onNavigateToInput={onNavigateToInput} />
           ))}
         </div>
       )}
