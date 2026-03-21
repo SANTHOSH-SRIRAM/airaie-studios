@@ -10,14 +10,8 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  XCircle,
-  RefreshCw,
   Play,
   Square,
-  Pencil,
-  Save,
-  X,
-  ChevronDown,
 } from 'lucide-react';
 import { Card, Badge, Button, Spinner } from '@airaie/ui';
 import type { BadgeVariant } from '@airaie/ui';
@@ -25,16 +19,14 @@ import { useBoardDetail } from '@hooks/useBoards';
 import { useCardDetail, useCards, useCardRuns, useUpdateCard } from '@hooks/useCards';
 import { useCardEvidence } from '@hooks/useEvidence';
 import { usePlan, usePlanExecutionStatus } from '@hooks/usePlan';
-import { useVerticalConfig, extractFieldValue, formatFieldValue } from '@hooks/useVerticalConfig';
+import { useVerticalConfig } from '@hooks/useVerticalConfig';
 import VerticalBadge from '@components/boards/VerticalBadge';
-import SchemaConfigEditor from '@components/studio/SchemaConfigEditor';
 import ExecutionTimeline from '@components/studio/ExecutionTimeline';
 import PlanViewer from '@components/studio/PlanViewer';
 import PreflightReport from '@components/studio/PreflightReport';
 import ExecutionProgress from '@components/studio/ExecutionProgress';
 import EvidenceCriteriaTable from '@components/boards/EvidenceCriteriaTable';
 import GateStatusPanel from '@components/studio/GateStatusPanel';
-import EvidenceComparisonPanel from '@components/studio/EvidenceComparisonPanel';
 import FailureAnalysisPanel from '@components/studio/FailureAnalysisPanel';
 import CardDetailLayout from '@components/studio/CardDetailLayout';
 import type { CardDetailLayoutHandle } from '@components/studio/CardDetailLayout';
@@ -48,12 +40,11 @@ import { ArtifactPreviewRouter } from '@/registry/viewer-registry';
 import ArtifactThumbnailStrip from '@components/studio/ArtifactThumbnailStrip';
 import type { ThumbnailItem } from '@components/studio/ArtifactThumbnailStrip';
 import '@/registry/stub-viewers'; // side-effect: register stub viewers
-import type { CardRun } from '@api/cards';
-import type { CardType, CardStatus, IntentParameter } from '@/types/board';
+import type { CardType, CardStatus } from '@/types/board';
 import { ROUTES } from '@/constants/routes';
 import { formatDateTime, formatDuration } from '@airaie/ui';
 import PlanExecutionPanel from '@components/studio/PlanExecutionPanel';
-import DecisionTraceViewer from '@components/studio/DecisionTraceViewer';
+import PropertiesPanelContent from '@components/studio/PropertiesPanelContent';
 
 // --- Badge variant mappings ---
 
@@ -76,95 +67,6 @@ const cardStatusVariants: Record<CardStatus, BadgeVariant> = {
   blocked: 'warning',
   skipped: 'neutral',
 };
-
-// --- Run detail expanded row ---
-
-function RunDetailExpanded({ runId, cardId, run }: { runId: string; cardId: string; run: CardRun }) {
-  const { data: runEvidence, isLoading } = useCardEvidence(cardId, { run_id: runId });
-
-  return (
-    <div className="px-6 py-3 space-y-3">
-      {/* Run metadata */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
-        <div className="flex justify-between">
-          <span className="text-content-tertiary">Run ID</span>
-          <span className="font-mono text-content-primary">{run.id}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-content-tertiary">Status</span>
-          <span className="text-content-primary font-medium">{run.status}</span>
-        </div>
-        {run.started_at && (
-          <div className="flex justify-between">
-            <span className="text-content-tertiary">Started</span>
-            <span className="text-content-primary">{formatDateTime(run.started_at)}</span>
-          </div>
-        )}
-        {run.completed_at && (
-          <div className="flex justify-between">
-            <span className="text-content-tertiary">Completed</span>
-            <span className="text-content-primary">{formatDateTime(run.completed_at)}</span>
-          </div>
-        )}
-        {run.duration_ms != null && (
-          <div className="flex justify-between">
-            <span className="text-content-tertiary">Duration</span>
-            <span className="font-mono text-content-primary">{formatDuration(run.duration_ms)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Decision Traces */}
-      <div>
-        <h4 className="text-[10px] font-semibold text-content-secondary uppercase tracking-wider mb-2">
-          Decision Trace
-        </h4>
-        <DecisionTraceViewer runId={runId} />
-      </div>
-
-      {/* Run evidence */}
-      <div>
-        <h4 className="text-[10px] font-semibold text-content-secondary uppercase tracking-wider mb-2">
-          Evidence
-        </h4>
-        {isLoading ? (
-          <div className="flex justify-center py-2">
-            <Spinner size="sm" />
-          </div>
-        ) : !runEvidence || runEvidence.length === 0 ? (
-          <p className="text-xs text-content-tertiary">No evidence for this run.</p>
-        ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-content-tertiary border-b border-surface-border">
-                <th className="text-left pb-1 font-medium">Criterion</th>
-                <th className="text-right pb-1 font-medium">Value</th>
-                <th className="text-right pb-1 font-medium">Threshold</th>
-                <th className="text-center pb-1 font-medium">Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runEvidence.map((ev) => (
-                <tr key={ev.id} className="border-b border-surface-border/50 last:border-0">
-                  <td className="py-1 text-content-primary">{ev.criterion}</td>
-                  <td className="py-1 text-right font-mono">{ev.value}</td>
-                  <td className="py-1 text-right font-mono text-content-muted">{ev.threshold}</td>
-                  <td className="py-1 text-center">
-                    {ev.passed ? (
-                      <CheckCircle2 size={12} className="inline text-green-600" />
-                    ) : (
-                      <XCircle size={12} className="inline text-red-600" />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // --- Main page component ---
 
@@ -281,56 +183,6 @@ export default function CardDetailPage() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollToSection = useCallback((step: string) => {
     sectionRefs.current[step]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-  const [editingConfig, setEditingConfig] = useState(false);
-  const [configDraft, setConfigDraft] = useState<Record<string, string>>({});
-  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
-  const [selectedRunIds, setSelectedRunIds] = useState<Set<string>>(new Set());
-  const [showComparison, setShowComparison] = useState(false);
-
-  const toggleRunSelection = useCallback((runId: string) => {
-    setSelectedRunIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(runId)) next.delete(runId);
-      else if (next.size < 2) next.add(runId);
-      return next;
-    });
-  }, []);
-
-  const handleStartEditConfig = useCallback(() => {
-    if (!card) return;
-    const draft: Record<string, string> = {};
-    for (const [key, value] of Object.entries(card.config ?? {})) {
-      draft[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    }
-    setConfigDraft(draft);
-    setEditingConfig(true);
-  }, [card]);
-
-  const handleCancelEditConfig = useCallback(() => {
-    setEditingConfig(false);
-    setConfigDraft({});
-  }, []);
-
-  const handleSaveConfig = useCallback(() => {
-    if (!card) return;
-    // Parse values back — try JSON parse for objects/arrays/numbers, fallback to string
-    const parsed: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(configDraft)) {
-      try {
-        parsed[key] = JSON.parse(value);
-      } catch {
-        parsed[key] = value;
-      }
-    }
-    updateCardMutation.mutate(
-      { id: card.id, config: parsed },
-      { onSuccess: () => setEditingConfig(false) }
-    );
-  }, [card, configDraft, updateCardMutation]);
-
-  const handleConfigValueChange = useCallback((key: string, value: string) => {
-    setConfigDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   // Keyboard shortcuts: Escape → back to board, F/Cmd+Shift+F → toggle fullscreen canvas
@@ -519,66 +371,19 @@ export default function CardDetailPage() {
                   )}
                 </div>
 
-                {/* Inputs tab */}
+                {/* Inputs tab — read-only config view (editing moved to properties panel) */}
                 <div className={activeTab === 'inputs' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}>
                   <Card>
                     <Card.Header>
-                      <div className="flex items-center justify-between w-full">
-                        <h3 className="text-sm font-semibold text-content-primary">
-                          Configuration
-                        </h3>
-                        {!editingConfig && configEntries.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleStartEditConfig}
-                            className="flex items-center gap-1 text-[10px] text-content-muted hover:text-brand-secondary transition-colors"
-                          >
-                            <Pencil size={10} />
-                            Edit
-                          </button>
-                        )}
-                        {editingConfig && (
-                          <div className="flex items-center gap-1.5">
-                            <Button variant="ghost" size="sm" onClick={handleCancelEditConfig}>
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={Save}
-                              onClick={handleSaveConfig}
-                              loading={updateCardMutation.isPending}
-                            >
-                              Save
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      <h3 className="text-sm font-semibold text-content-primary">
+                        Configuration
+                      </h3>
                     </Card.Header>
                     <Card.Body>
                       {configEntries.length === 0 ? (
                         <p className="text-sm text-content-tertiary">
                           No configuration parameters.
                         </p>
-                      ) : editingConfig ? (
-                        <div className="space-y-2">
-                          {Object.entries(configDraft).map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex items-center gap-3 text-sm border-b border-surface-border last:border-0 pb-2 last:pb-0"
-                            >
-                              <span className="text-content-tertiary font-mono text-xs min-w-[80px] flex-shrink-0">
-                                {key}
-                              </span>
-                              <input
-                                type="text"
-                                value={value}
-                                onChange={(e) => handleConfigValueChange(key, e.target.value)}
-                                className="flex-1 text-xs font-mono px-2 py-1 border border-surface-border bg-white focus:outline-none focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary/20 transition-colors"
-                              />
-                            </div>
-                          ))}
-                        </div>
                       ) : (
                         <div className="space-y-2">
                           {configEntries.map(([key, value]) => (
@@ -790,215 +595,22 @@ export default function CardDetailPage() {
             </CardDetailTabs>
           }
           properties={
-            <div className="h-full overflow-auto p-4 border-l border-surface-border bg-white space-y-4">
-              {/* Card status summary */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">Status</h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant={cardStatusVariants[card.status]} dot>
-                    {card.status}
-                  </Badge>
-                </div>
-                <div className="text-xs text-content-muted space-y-1">
-                  {card.started_at && (
-                    <div className="flex items-center gap-1">
-                      <Clock size={10} />
-                      <span>Started: {formatDateTime(card.started_at)}</span>
-                    </div>
-                  )}
-                  {card.completed_at && (
-                    <div className="flex items-center gap-1">
-                      <CheckCircle2 size={10} className="text-green-600" />
-                      <span>Completed: {formatDateTime(card.completed_at)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Runs section */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">Runs</h3>
-                {runsLoading ? (
-                  <div className="flex justify-center py-4">
-                    <Spinner size="sm" />
-                  </div>
-                ) : !runs || runs.length === 0 ? (
-                  <p className="text-xs text-content-tertiary">
-                    No runs executed yet.
-                  </p>
-                ) : (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-content-tertiary border-b border-surface-border">
-                        <th className="text-left pb-1 font-medium w-4"></th>
-                        <th className="text-center pb-1 font-medium w-5"></th>
-                        <th className="text-left pb-1 font-medium">Run ID</th>
-                        <th className="text-left pb-1 font-medium">Status</th>
-                        <th className="text-right pb-1 font-medium">Duration</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {runs.map((run) => {
-                        const isExpanded = expandedRunId === run.id;
-                        return (
-                          <React.Fragment key={run.id}>
-                            <tr
-                              className="border-b border-surface-border last:border-0 cursor-pointer hover:bg-slate-50 select-none"
-                              onClick={() => setExpandedRunId(isExpanded ? null : run.id)}
-                            >
-                              <td className="py-1 pl-1">
-                                <ChevronDown
-                                  size={10}
-                                  className={`text-content-muted transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                                />
-                              </td>
-                              <td className="py-1 text-center" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedRunIds.has(run.id)}
-                                  onChange={() => toggleRunSelection(run.id)}
-                                  disabled={!selectedRunIds.has(run.id) && selectedRunIds.size >= 2}
-                                  className="w-3 h-3 accent-blue-600 cursor-pointer"
-                                />
-                              </td>
-                              <td className="py-1 font-mono text-content-primary">
-                                {run.id.slice(0, 8)}
-                              </td>
-                              <td className="py-1">
-                                <Badge
-                                  variant={
-                                    run.status === 'completed'
-                                      ? 'success'
-                                      : run.status === 'failed'
-                                        ? 'danger'
-                                        : run.status === 'running'
-                                          ? 'info'
-                                          : 'neutral'
-                                  }
-                                  dot
-                                  className="text-[8px]"
-                                >
-                                  {run.status}
-                                </Badge>
-                              </td>
-                              <td className="py-1 text-right font-mono text-content-muted">
-                                {run.duration_ms != null
-                                  ? formatDuration(run.duration_ms)
-                                  : '--'}
-                              </td>
-                            </tr>
-                            {isExpanded && (
-                              <tr>
-                                <td colSpan={5} className="bg-slate-50 border-b border-surface-border">
-                                  <RunDetailExpanded runId={run.id} cardId={run.card_id} run={run} />
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-
-                {/* Compare button + panel */}
-                {runs && runs.length >= 2 && (
-                  <div className="mt-2">
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={selectedRunIds.size !== 2}
-                        onClick={() => setShowComparison(true)}
-                      >
-                        Compare ({selectedRunIds.size}/2)
-                      </Button>
-                      {selectedRunIds.size > 0 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { setSelectedRunIds(new Set()); setShowComparison(false); }}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-
-                    {showComparison && selectedRunIds.size === 2 && (() => {
-                      const ids = Array.from(selectedRunIds);
-                      const baseRun = runs.find((r) => r.id === ids[0]);
-                      const compRun = runs.find((r) => r.id === ids[1]);
-                      if (!baseRun || !compRun) return null;
-                      return (
-                        <div className="mt-2">
-                          <EvidenceComparisonPanel
-                            cardId={cardId!}
-                            baselineRun={baseRun}
-                            compareRun={compRun}
-                            onClose={() => setShowComparison(false)}
-                          />
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-
-              {/* Domain Metadata */}
-              {intentConfig?.detailFields && intentConfig.detailFields.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">Domain Metadata</h3>
-                  <div className="grid grid-cols-1 gap-y-2">
-                    {intentConfig.detailFields.map((field) => {
-                      const value = extractFieldValue(card, field.key);
-                      if (value == null) return null;
-                      return (
-                        <div key={field.key} className="flex flex-col">
-                          <span className="text-[10px] text-content-tertiary">{field.label}</span>
-                          <span className="text-xs font-medium text-content-primary studio-mono">
-                            {formatFieldValue(value, field.format, field.unit)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Dependencies */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">Dependencies</h3>
-                {depCards.length === 0 ? (
-                  <p className="text-xs text-content-tertiary">
-                    No dependencies.
-                  </p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {depCards.map((dep) => (
-                      <div
-                        key={dep.id}
-                        className="flex items-center justify-between py-1 border-b border-surface-border last:border-0"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Link
-                            to={`/boards/${boardId}/cards/${dep.id}`}
-                            className="text-xs font-medium text-content-primary hover:text-brand-secondary transition-colors"
-                          >
-                            {dep.name}
-                          </Link>
-                          <Badge variant={cardTypeVariants[dep.type]} className="text-[8px]">
-                            {dep.type}
-                          </Badge>
-                        </div>
-                        <Badge variant={cardStatusVariants[dep.status]} dot className="text-[8px]">
-                          {dep.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <PropertiesPanelContent
+              card={card}
+              boardId={boardId!}
+              board={board}
+              runs={runs}
+              runsLoading={runsLoading}
+              evidence={evidence}
+              evidenceLoading={evidenceLoading}
+              plan={plan}
+              execStatus={execStatus}
+              intentConfig={intentConfig}
+              theme={theme}
+              depCards={depCards}
+              onRunCard={() => setPlanExecutionOpen(true)}
+              onStopCard={() => updateCardMutation.mutate({ id: card.id, status: 'skipped' })}
+            />
           }
         />
       </div>
