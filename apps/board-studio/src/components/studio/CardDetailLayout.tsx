@@ -2,25 +2,30 @@
 // CardDetailLayout — Split-pane layout with collapsible properties panel
 // ============================================================
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useImperativeHandle } from 'react';
 import {
   Panel,
   Group,
   Separator,
   usePanelRef,
-  type PanelImperativeHandle,
 } from 'react-resizable-panels';
+
+export interface CardDetailLayoutHandle {
+  toggleProperties: () => void;
+}
 
 export interface CardDetailLayoutProps {
   canvas: React.ReactNode;
   properties: React.ReactNode;
   onToggleProperties?: () => void;
+  layoutRef?: React.RefObject<CardDetailLayoutHandle | null>;
 }
 
 const CardDetailLayout: React.FC<CardDetailLayoutProps> = ({
   canvas,
   properties,
   onToggleProperties,
+  layoutRef,
 }) => {
   const propertiesPanelRef = usePanelRef();
 
@@ -35,30 +40,34 @@ const CardDetailLayout: React.FC<CardDetailLayoutProps> = ({
     onToggleProperties?.();
   }, [onToggleProperties]);
 
+  // Expose toggleProperties to parent via ref for keyboard shortcut access
+  useImperativeHandle(layoutRef, () => ({
+    toggleProperties,
+  }), [toggleProperties]);
+
   return (
-    <div className="h-full overflow-hidden">
-      <Group orientation="horizontal" id="card-detail-panels">
-        {/* Canvas — dominant left panel */}
-        <Panel id="canvas" minSize={50} defaultSize={65}>
-          <div className="h-full overflow-hidden">{canvas}</div>
-        </Panel>
+    <Group orientation="horizontal" id="card-detail-panels">
+      {/* Canvas — dominant left panel */}
+      <Panel id="canvas" defaultSize="65%" minSize="40%">
+        <div className="h-full overflow-hidden">{canvas}</div>
+      </Panel>
 
-        <Separator onDoubleClick={toggleProperties} />
+      <Separator onDoubleClick={toggleProperties} />
 
-        {/* Properties — collapsible right panel */}
-        <Panel
-          id="properties"
-          panelRef={propertiesPanelRef}
-          defaultSize={35}
-          minSize={20}
-          maxSize={50}
-          collapsible
-          collapsedSize={0}
-        >
-          <div className="h-full overflow-hidden">{properties}</div>
-        </Panel>
-      </Group>
-    </div>
+      {/* Properties — collapsible right panel */}
+      <Panel
+        id="properties"
+        panelRef={propertiesPanelRef}
+        defaultSize="35%"
+        minSize="15%"
+        maxSize="50%"
+        collapsible
+      >
+        <div className="h-full overflow-auto border-l border-surface-border bg-white">
+          {properties}
+        </div>
+      </Panel>
+    </Group>
   );
 };
 
