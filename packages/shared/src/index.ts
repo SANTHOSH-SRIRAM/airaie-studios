@@ -43,6 +43,16 @@ export { ENDPOINTS } from './constants/api';
 // Schemas (Zod)
 export * from './schemas/requests';
 
+// Artifact API
+export { listArtifacts, getArtifact, getUploadURL, finalizeArtifact, getDownloadURL, getLineage } from './api/artifacts';
+
+// Artifact Hooks
+export { useRunArtifacts, useArtifactDownloadUrl } from './hooks/useArtifacts';
+
+// Artifact Helpers
+export { kernelArtifactToRunArtifact, matchArtifacts, getArtifactPreviewType } from './utils/artifactHelpers';
+export type { RunArtifact, OutputArtifactDefinition, ArtifactPreviewType } from './utils/artifactHelpers';
+
 // Utils
 export { toUiRunStatus, toUiNodeRunStatus, calcElapsedSeconds } from './utils/statusMap';
 export { isSafeUrl, safeOpen } from './utils/urlValidation';
