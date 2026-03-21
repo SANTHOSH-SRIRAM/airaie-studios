@@ -119,14 +119,24 @@ function CardInspector({
   onCloneCard?: (cardId: string) => void;
   onViewCardDetail?: (cardId: string) => void;
 }) {
+  // Initial fetch to get card data (no polling yet — we need status to decide)
   const { data: card, isLoading } = useCardDetail(cardId);
+
+  // Poll at 5s intervals when card is running or queued; stop polling when idle/completed
+  const isActiveStatus = card?.status === 'running' || card?.status === 'queued';
+
+  // React Query merges refetchInterval for same queryKey, so setting it here
+  // activates/deactivates polling based on card status
+  const { data: activeCard } = useCardDetail(cardId, {
+    refetchInterval: isActiveStatus ? 5000 : false,
+  });
   const { data: runs } = useCardRuns(cardId);
   const { data: evidence } = useCardEvidence(cardId, { latest: true });
-  const { theme, intentConfig } = useVerticalConfig(card, board);
+  const { theme, intentConfig } = useVerticalConfig(activeCard, board);
   const { data: plan } = usePlan(cardId);
   const [showExecPanel, setShowExecPanel] = useState(false);
 
-  if (isLoading || !card) {
+  if (isLoading || !activeCard) {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner />
@@ -134,85 +144,174 @@ function CardInspector({
     );
   }
 
-  const kpiEntries = Object.entries(card.kpis ?? {});
-  const configEntries = Object.entries(card.config ?? {});
+  const kpiEntries = Object.entries(activeCard.kpis ?? {});
+  const top3Kpis = kpiEntries.slice(0, 3);
+  const configEntries = Object.entries(activeCard.config ?? {});
+  const completedRuns = runs?.filter((r) => r.status === 'completed') ?? [];
+  const hasCompletedRun = completedRuns.length > 0;
 
   // Resolve icon for header
   const HeaderIcon = intentConfig?.icon ?? theme?.icon ?? Layers;
 
   return (
     <div>
-      {/* Card header — vertical-aware */}
+      {/* Compact card summary header */}
       <div className="px-4 py-3 border-b border-surface-border">
         <div className="flex items-center gap-2 mb-1">
           <HeaderIcon size={14} className="text-content-tertiary flex-shrink-0" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-content-primary truncate">
-            {card.name}
+            {activeCard.name}
           </h3>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant={statusVariantFor(card.status)} dot className="text-[10px]">
-            {card.status}
+          <Badge variant={statusVariantFor(activeCard.status)} dot className="text-[10px]">
+            {activeCard.status}
           </Badge>
           <Badge variant="neutral" className="text-[10px]">
-            {intentConfig?.displayName ?? card.type}
+            {intentConfig?.displayName ?? activeCard.type}
           </Badge>
           {theme && <VerticalBadge theme={theme} />}
+          {isActiveStatus && (
+            <span className="text-[9px] text-blue-500 animate-pulse ml-1">polling</span>
+          )}
         </div>
+      </div>
+
+      {/* Top 3 KPIs — compact summary (D-07) */}
+      {top3Kpis.length > 0 && (
+        <div className="px-4 py-2 border-b border-surface-border">
+          <div className="text-[10px] text-content-muted uppercase tracking-wider mb-1.5">Top KPIs</div>
+          <div className="space-y-1">
+            {top3Kpis.map(([key, value]) => {
+              // Check if evidence has a matching entry for pass/fail indicator
+              const matchingEvidence = evidence?.find((e) => e.criterion === key);
+              return (
+                <div key={key} className="flex items-center justify-between text-xs">
+                  <span className="text-content-secondary truncate flex-1 mr-2">{key}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-content-primary studio-mono">
+                      {typeof value === 'number' ? value.toLocaleString() : String(value ?? '—')}
+                    </span>
+                    {matchingEvidence && (
+                      matchingEvidence.passed ? (
+                        <CheckCircle2 size={10} className="text-green-600 flex-shrink-0" />
+                      ) : (
+                        <XCircle size={10} className="text-red-500 flex-shrink-0" />
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {kpiEntries.length > 3 && (
+            <div className="text-[10px] text-content-muted mt-1">
+              +{kpiEntries.length - 3} more KPI{kpiEntries.length - 3 !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick actions row */}
+      <div className="px-4 py-2.5 border-b border-surface-border space-y-2">
+        <div className="flex items-center gap-2">
+          {activeCard.status === 'running' || activeCard.status === 'queued' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Square}
+              className="flex-1"
+              onClick={() => onStopCard?.(activeCard.id)}
+            >
+              Stop
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Play}
+              className="flex-1"
+              onClick={() => onRunCard?.(activeCard.id)}
+              disabled={activeCard.status === 'completed' || activeCard.status === 'blocked' || activeCard.status === 'skipped'}
+            >
+              Run
+            </Button>
+          )}
+          {onViewCardDetail && (
+            <button
+              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              onClick={() => onViewCardDetail(activeCard.id)}
+            >
+              View Details
+              <ExternalLink size={10} />
+            </button>
+          )}
+        </div>
+
+        {/* Mini run info — links to detail page Results tab */}
+        {hasCompletedRun && onViewCardDetail && (
+          <button
+            className="flex items-center gap-1.5 text-[11px] text-content-secondary hover:text-content-primary transition-colors w-full"
+            onClick={() => onViewCardDetail(activeCard.id)}
+          >
+            <Eye size={10} className="flex-shrink-0" />
+            <span>{completedRuns.length} completed run{completedRuns.length !== 1 ? 's' : ''}</span>
+          </button>
+        )}
       </div>
 
       {/* Properties */}
       <InspectorSection title="Properties">
         <div className="space-y-2 text-xs">
-          {card.description && (
-            <p className="text-content-secondary leading-relaxed">{card.description}</p>
+          {activeCard.description && (
+            <p className="text-content-secondary leading-relaxed">{activeCard.description}</p>
           )}
-          <PropertyRow label="Ordinal" value={String(card.ordinal)} />
-          <PropertyRow label="Dependencies" value={card.dependencies?.length ? card.dependencies.length.toString() : 'None'} />
-          {card.started_at && (
-            <PropertyRow label="Started" value={new Date(card.started_at).toLocaleString()} />
+          <PropertyRow label="Ordinal" value={String(activeCard.ordinal)} />
+          <PropertyRow label="Dependencies" value={activeCard.dependencies?.length ? activeCard.dependencies.length.toString() : 'None'} />
+          {activeCard.started_at && (
+            <PropertyRow label="Started" value={new Date(activeCard.started_at).toLocaleString()} />
           )}
-          {card.completed_at && (
-            <PropertyRow label="Completed" value={new Date(card.completed_at).toLocaleString()} />
+          {activeCard.completed_at && (
+            <PropertyRow label="Completed" value={new Date(activeCard.completed_at).toLocaleString()} />
           )}
         </div>
       </InspectorSection>
 
       {/* Execution — shown when card has any execution data */}
-      {(card.execution_plan_id || card.selected_tool || card.evidence_summary) && (
+      {(activeCard.execution_plan_id || activeCard.selected_tool || activeCard.evidence_summary) && (
         <InspectorSection title="Execution" badge={
-          card.preflight_status ? (
+          activeCard.preflight_status ? (
             <Badge
-              variant={card.preflight_status === 'passed' ? 'success' : card.preflight_status === 'failed' ? 'danger' : 'neutral'}
+              variant={activeCard.preflight_status === 'passed' ? 'success' : activeCard.preflight_status === 'failed' ? 'danger' : 'neutral'}
               className="text-[9px]"
             >
-              {card.preflight_status}
+              {activeCard.preflight_status}
             </Badge>
           ) : undefined
         }>
           <div className="space-y-2.5">
             {/* Selected tool + trust badge */}
-            {card.selected_tool && (
+            {activeCard.selected_tool && (
               <div className="flex items-center gap-2">
                 <Wrench size={12} className="text-content-muted shrink-0" />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-medium text-content-primary truncate block">
-                    {card.selected_tool.slug}
+                    {activeCard.selected_tool.slug}
                   </span>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    {card.selected_tool.version && (
+                    {activeCard.selected_tool.version && (
                       <span className="text-[10px] text-content-muted studio-mono">
-                        v{card.selected_tool.version}
+                        v{activeCard.selected_tool.version}
                       </span>
                     )}
                     <Badge
                       variant={
-                        card.selected_tool.trust_level === 'certified' ? 'success' :
-                        card.selected_tool.trust_level === 'verified' ? 'info' : 'warning'
+                        activeCard.selected_tool.trust_level === 'certified' ? 'success' :
+                        activeCard.selected_tool.trust_level === 'verified' ? 'info' : 'warning'
                       }
                       className="text-[9px]"
                     >
-                      {card.selected_tool.trust_level}
+                      {activeCard.selected_tool.trust_level}
                     </Badge>
                   </div>
                 </div>
@@ -225,66 +324,66 @@ function CardInspector({
                 {plan.steps && (
                   <span>{plan.steps.length} step{plan.steps.length !== 1 ? 's' : ''}</span>
                 )}
-                {card.cost_estimate != null && (
+                {activeCard.cost_estimate != null && (
                   <span className="flex items-center gap-0.5">
                     <DollarSign size={10} />
-                    ~${card.cost_estimate.toFixed(2)}
+                    ~${activeCard.cost_estimate.toFixed(2)}
                   </span>
                 )}
-                {card.time_estimate && (
+                {activeCard.time_estimate && (
                   <span className="flex items-center gap-0.5">
                     <Timer size={10} />
-                    {card.time_estimate}
+                    {activeCard.time_estimate}
                   </span>
                 )}
               </div>
             )}
 
             {/* Preflight summary */}
-            {(card.preflight_blockers != null || card.preflight_warnings != null) && (
+            {(activeCard.preflight_blockers != null || activeCard.preflight_warnings != null) && (
               <div className="flex items-center gap-2 text-[11px]">
                 <ShieldCheck size={12} className="text-content-muted shrink-0" />
-                {card.preflight_blockers != null && card.preflight_blockers > 0 && (
-                  <span className="text-red-600">{card.preflight_blockers} blocker{card.preflight_blockers !== 1 ? 's' : ''}</span>
+                {activeCard.preflight_blockers != null && activeCard.preflight_blockers > 0 && (
+                  <span className="text-red-600">{activeCard.preflight_blockers} blocker{activeCard.preflight_blockers !== 1 ? 's' : ''}</span>
                 )}
-                {card.preflight_warnings != null && card.preflight_warnings > 0 && (
-                  <span className="text-amber-500">{card.preflight_warnings} warning{card.preflight_warnings !== 1 ? 's' : ''}</span>
+                {activeCard.preflight_warnings != null && activeCard.preflight_warnings > 0 && (
+                  <span className="text-amber-500">{activeCard.preflight_warnings} warning{activeCard.preflight_warnings !== 1 ? 's' : ''}</span>
                 )}
-                {card.preflight_blockers === 0 && card.preflight_warnings === 0 && (
+                {activeCard.preflight_blockers === 0 && activeCard.preflight_warnings === 0 && (
                   <span className="text-green-600">All checks passed</span>
                 )}
               </div>
             )}
 
             {/* Evidence summary bar */}
-            {card.evidence_summary && card.evidence_summary.total > 0 && (
+            {activeCard.evidence_summary && activeCard.evidence_summary.total > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] text-content-muted uppercase tracking-wider">Evidence</span>
                   <span className="text-[10px] text-content-muted studio-mono">
-                    {card.evidence_summary.passed}/{card.evidence_summary.total} pass
-                    {card.evidence_summary.warnings > 0 && ` · ${card.evidence_summary.warnings} warn`}
+                    {activeCard.evidence_summary.passed}/{activeCard.evidence_summary.total} pass
+                    {activeCard.evidence_summary.warnings > 0 && ` · ${activeCard.evidence_summary.warnings} warn`}
                   </span>
                 </div>
                 <div className="h-1.5 bg-surface-bg border border-surface-border flex overflow-hidden">
-                  {card.evidence_summary.passed > 0 && (
-                    <div className="h-full bg-green-500" style={{ width: `${(card.evidence_summary.passed / card.evidence_summary.total) * 100}%` }} />
+                  {activeCard.evidence_summary.passed > 0 && (
+                    <div className="h-full bg-green-500" style={{ width: `${(activeCard.evidence_summary.passed / activeCard.evidence_summary.total) * 100}%` }} />
                   )}
-                  {card.evidence_summary.warnings > 0 && (
-                    <div className="h-full bg-amber-400" style={{ width: `${(card.evidence_summary.warnings / card.evidence_summary.total) * 100}%` }} />
+                  {activeCard.evidence_summary.warnings > 0 && (
+                    <div className="h-full bg-amber-400" style={{ width: `${(activeCard.evidence_summary.warnings / activeCard.evidence_summary.total) * 100}%` }} />
                   )}
-                  {card.evidence_summary.failed > 0 && (
-                    <div className="h-full bg-red-500" style={{ width: `${(card.evidence_summary.failed / card.evidence_summary.total) * 100}%` }} />
+                  {activeCard.evidence_summary.failed > 0 && (
+                    <div className="h-full bg-red-500" style={{ width: `${(activeCard.evidence_summary.failed / activeCard.evidence_summary.total) * 100}%` }} />
                   )}
                 </div>
               </div>
             )}
 
             {/* Compact failure analysis */}
-            {card.status === 'failed' && evidence && evidence.some((e) => !e.passed) && (
+            {activeCard.status === 'failed' && evidence && evidence.some((e) => !e.passed) && (
               <div className="mb-2 p-2 border border-red-200 bg-red-50/30">
                 <FailureAnalysisPanel
-                  card={card}
+                  card={activeCard}
                   evidence={evidence}
                   intentConfig={intentConfig}
                   compact
@@ -315,9 +414,9 @@ function CardInspector({
       )}
 
       {/* CardExecutionPanel overlay */}
-      {showExecPanel && card && (
+      {showExecPanel && activeCard && (
         <CardExecutionPanel
-          card={card}
+          card={activeCard}
           board={board}
           onClose={() => setShowExecPanel(false)}
         />
@@ -338,7 +437,7 @@ function CardInspector({
         <InspectorSection title="Domain Properties">
           <div className="space-y-2 text-xs">
             {intentConfig.detailFields.map((field) => {
-              const value = extractFieldValue(card, field.key);
+              const value = extractFieldValue(activeCard, field.key);
               if (value == null) return null;
               return (
                 <PropertyRow
@@ -352,86 +451,41 @@ function CardInspector({
         </InspectorSection>
       )}
 
-      {/* KPIs */}
+      {/* KPIs — full dashboard (collapsed if top 3 already shown above) */}
       {kpiEntries.length > 0 && (
-        <InspectorSection title="KPIs" badge={<span className="text-[10px] text-content-muted studio-mono">{kpiEntries.length}</span>}>
-          <KPIDashboard kpis={card.kpis} />
+        <InspectorSection title="KPIs" defaultOpen={kpiEntries.length <= 3 ? false : true} badge={<span className="text-[10px] text-content-muted studio-mono">{kpiEntries.length}</span>}>
+          <KPIDashboard kpis={activeCard.kpis} />
         </InspectorSection>
       )}
 
       {/* Config */}
       {configEntries.length > 0 && (
         <InspectorSection title="Configuration" defaultOpen={false}>
-          <CardConfigEditor cardId={card.id} config={card.config} />
+          <CardConfigEditor cardId={activeCard.id} config={activeCard.config} />
         </InspectorSection>
       )}
 
       {/* Dependencies */}
       <InspectorSection title="Dependencies" defaultOpen={false}>
-        <DependencyManager card={card} allCards={allCards} boardId={boardId} />
+        <DependencyManager card={activeCard} allCards={allCards} boardId={boardId} />
       </InspectorSection>
 
       {/* Run history */}
       {runs && runs.length > 0 && (
         <InspectorSection title="Run History" badge={<span className="text-[10px] text-content-muted studio-mono">{runs.length}</span>}>
-          <RunHistoryTimeline cardId={card.id} />
+          <RunHistoryTimeline cardId={activeCard.id} />
         </InspectorSection>
       )}
 
-      {/* Actions — domain actions from registry, or fallback to generic */}
+      {/* Secondary actions */}
       <div className="px-4 py-3 space-y-2">
-        {intentConfig?.actions && intentConfig.actions.length > 0 ? (
-          <DomainActions
-            actions={intentConfig.actions}
-            card={card}
-            onAction={(actionId, cardId) => {
-              if (actionId === 'run' || actionId === 'rerun') onRunCard?.(cardId);
-              else if (actionId === 'stop') onStopCard?.(cardId);
-              // Other actions can be extended as needed
-            }}
-          />
-        ) : (
-          <>
-            {card.status === 'running' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                icon={Square}
-                className="w-full"
-                onClick={() => onStopCard?.(card.id)}
-              >
-                Stop Card
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Play}
-                className="w-full"
-                onClick={() => onRunCard?.(card.id)}
-                disabled={card.status === 'completed' || card.status === 'blocked' || card.status === 'skipped'}
-              >
-                Run Card
-              </Button>
-            )}
-          </>
-        )}
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Eye}
-          className="w-full"
-          onClick={() => onViewCardDetail?.(card.id)}
-        >
-          View Details
-        </Button>
         {onCloneCard && (
           <Button
             variant="ghost"
             size="sm"
             icon={Copy}
             className="w-full"
-            onClick={() => onCloneCard(card.id)}
+            onClick={() => onCloneCard(activeCard.id)}
           >
             Clone Card
           </Button>
@@ -442,7 +496,7 @@ function CardInspector({
             size="sm"
             icon={Trash2}
             className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onDeleteCard(card.id)}
+            onClick={() => onDeleteCard(activeCard.id)}
           >
             Delete Card
           </Button>
