@@ -33,7 +33,7 @@ function inferPreviewType(contentType?: string): ArtifactPreviewType {
 }
 
 export function useHeroArtifact(
-  intentConfig: IntentCardConfig | undefined,
+  intentConfig: IntentCardConfig | null | undefined,
   kernelArtifacts: KernelArtifact[] | undefined,
 ) {
   const [overrideKey, setOverrideKey] = useState<string | null>(null);

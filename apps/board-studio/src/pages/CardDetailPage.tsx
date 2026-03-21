@@ -2,7 +2,7 @@
 // CardDetailPage — split-pane card detail with tabbed navigation
 // ============================================================
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -39,6 +39,12 @@ import FailureAnalysisPanel from '@components/studio/FailureAnalysisPanel';
 import CardDetailLayout from '@components/studio/CardDetailLayout';
 import CardDetailTabs from '@components/studio/CardDetailTabs';
 import { useCardTab } from '@hooks/useCardTab';
+import { useHeroArtifact } from '@hooks/useHeroArtifact';
+import { useCardDetailStore } from '@store/cardDetailStore';
+import { useRunArtifacts, useArtifactDownloadUrl } from '@airaie/shared';
+import { ArtifactPreviewRouter } from '@/registry/viewer-registry';
+import ArtifactThumbnailStrip from '@components/studio/ArtifactThumbnailStrip';
+import type { ThumbnailItem } from '@components/studio/ArtifactThumbnailStrip';
 import '@/registry/stub-viewers'; // side-effect: register stub viewers
 import type { CardRun } from '@api/cards';
 import type { CardType, CardStatus, IntentParameter } from '@/types/board';
@@ -182,8 +188,89 @@ export default function CardDetailPage() {
   const { theme, intentConfig } = useVerticalConfig(card, board);
   const [planExecutionOpen, setPlanExecutionOpen] = useState(false);
 
-  // Tab navigation with URL persistence and state-driven defaults
-  const { activeTab, setTab } = useCardTab(card?.status ?? 'draft');
+  // Tab navigation with URL persistence, state-driven defaults, and Zustand restoration
+  const { activeTab, setTab } = useCardTab(card?.status ?? 'draft', cardId);
+
+  // --- Hero artifact state ---
+  const { setSession: setCardSession } = useCardDetailStore();
+
+  // Get latest completed run for artifact loading
+  const latestCompletedRun = useMemo(() => {
+    if (!runs || runs.length === 0) return null;
+    const completed = runs
+      .filter((r) => r.status === 'completed')
+      .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''));
+    return completed[0] ?? null;
+  }, [runs]);
+
+  const { data: runArtifacts } = useRunArtifacts(latestCompletedRun?.id ?? '');
+  const { heroArtifact, otherArtifacts, setHeroKey } = useHeroArtifact(intentConfig, runArtifacts);
+  const downloadUrlMutation = useArtifactDownloadUrl();
+  const [heroUrl, setHeroUrl] = useState<string>('');
+
+  // Fetch presigned URL for hero artifact on-demand (D-01)
+  useEffect(() => {
+    if (!heroArtifact?.artifact?.key || !runArtifacts) return;
+    // Find kernel artifact ID by name
+    const kernelArt = runArtifacts.find((a) => a.name === heroArtifact.artifact.key);
+    if (kernelArt) {
+      downloadUrlMutation.mutate(kernelArt.id, {
+        onSuccess: (result) => setHeroUrl((result as { download_url: string }).download_url ?? String(result)),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroArtifact?.artifact?.key, runArtifacts]);
+
+  // Build thumbnail items for the strip
+  const thumbnailItems: ThumbnailItem[] = useMemo(() => {
+    if (!heroArtifact) return [];
+    const allItems = [heroArtifact, ...otherArtifacts];
+    return allItems.map((item) => ({
+      key: item.artifact.key,
+      label: item.definition?.label ?? item.artifact.filename ?? item.artifact.key,
+      preview: item.definition?.preview ?? 'download',
+    }));
+  }, [heroArtifact, otherArtifacts]);
+
+  // Handle thumbnail click — swap hero and fetch URL
+  const handleThumbnailSelect = useCallback(
+    (key: string) => {
+      setHeroKey(key);
+      if (!runArtifacts) return;
+      const kernelArt = runArtifacts.find((a) => a.name === key);
+      if (kernelArt) {
+        downloadUrlMutation.mutate(kernelArt.id, {
+          onSuccess: (result) => setHeroUrl((result as { download_url: string }).download_url ?? String(result)),
+        });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [runArtifacts, setHeroKey],
+  );
+
+  // Scroll position persistence
+  const resultsScrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (!cardId) return;
+    const stored = useCardDetailStore.getState().getSession(cardId);
+    if (stored?.scrollTop && resultsScrollRef.current) {
+      resultsScrollRef.current.scrollTop = stored.scrollTop;
+    }
+  }, [cardId]);
+
+  // Debounced scroll save
+  const handleResultsScroll = useCallback(() => {
+    if (!cardId || !resultsScrollRef.current) return;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (resultsScrollRef.current) {
+        setCardSession(cardId, { scrollTop: resultsScrollRef.current.scrollTop });
+      }
+    }, 200);
+  }, [cardId, setCardSession]);
 
   // Section refs for timeline step click scrolling
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -293,9 +380,9 @@ export default function CardDetailPage() {
   const kpiEntries = Object.entries(card.kpis ?? {});
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
       {/* Top navigation bar */}
-      <div className="flex items-center gap-3 px-4 border-b border-surface-border bg-white flex-shrink-0" style={{ height: 48 }}>
+      <div className="flex items-center gap-3 px-4 border-b border-surface-border bg-white flex-shrink-0 min-w-0" style={{ height: 48 }}>
         <button
           type="button"
           onClick={() => navigate(`/boards/${boardId}`)}
@@ -304,7 +391,7 @@ export default function CardDetailPage() {
           <ArrowLeft size={16} />
         </button>
 
-        <nav className="flex items-center gap-1.5 text-xs text-content-tertiary">
+        <nav className="flex items-center gap-1.5 text-xs text-content-tertiary min-w-0">
           <Link
             to={ROUTES.BOARDS}
             className="hover:text-content-primary transition-colors"
@@ -327,9 +414,9 @@ export default function CardDetailPage() {
       </div>
 
       {/* Card header — fixed above split-pane */}
-      <div className="flex items-start justify-between gap-4 px-6 py-3 border-b border-surface-border bg-white flex-shrink-0">
-        <div className="space-y-1.5">
-          <h1 className="text-lg font-bold text-content-primary">
+      <div className="flex items-start justify-between gap-4 px-6 py-3 border-b border-surface-border bg-white flex-shrink-0 min-w-0">
+        <div className="space-y-1.5 min-w-0">
+          <h1 className="text-lg font-bold text-content-primary truncate">
             {card.name}
           </h1>
           {card.description && (
@@ -555,7 +642,46 @@ export default function CardDetailPage() {
                 </div>
 
                 {/* Results tab */}
-                <div className={activeTab === 'results' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}>
+                <div
+                  ref={resultsScrollRef}
+                  onScroll={handleResultsScroll}
+                  className={activeTab === 'results' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}
+                >
+                  {/* Hero Artifact Canvas */}
+                  {heroArtifact && (
+                    <Card>
+                      <Card.Header>
+                        <h3 className="text-sm font-semibold text-content-primary">
+                          {heroArtifact.definition?.label ?? heroArtifact.artifact.filename ?? 'Artifact Preview'}
+                        </h3>
+                      </Card.Header>
+                      <Card.Body className="p-0">
+                        <div className="min-h-[200px]">
+                          {heroUrl ? (
+                            <ArtifactPreviewRouter
+                              type={heroArtifact.definition?.preview ?? 'download'}
+                              url={heroUrl}
+                              filename={heroArtifact.artifact.filename}
+                              contentType={heroArtifact.artifact.content_type}
+                              sizeBytes={heroArtifact.artifact.size_bytes}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-48 text-sm text-content-tertiary">
+                              Loading artifact preview...
+                            </div>
+                          )}
+                        </div>
+                        {thumbnailItems.length > 1 && (
+                          <ArtifactThumbnailStrip
+                            artifacts={thumbnailItems}
+                            activeKey={heroArtifact.artifact.key}
+                            onSelect={handleThumbnailSelect}
+                          />
+                        )}
+                      </Card.Body>
+                    </Card>
+                  )}
+
                   {/* Failure Analysis */}
                   {card.status === 'failed' && evidence && evidence.some((e) => !e.passed) && (
                     <Card className="border-red-200">
