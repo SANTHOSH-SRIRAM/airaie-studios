@@ -25,6 +25,7 @@ export default defineConfig({
           'state': ['zustand', '@tanstack/react-query'],
           'charts': ['@airaie/charts', 'recharts'],
           'ui': ['@airaie/ui', '@airaie/shell', 'lucide-react'],
+          'panels': ['react-resizable-panels'],
         },
       },
     },

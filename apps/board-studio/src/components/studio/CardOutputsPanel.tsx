@@ -8,6 +8,7 @@ import { Download, Image, FileText, Table2, Code, Box, ExternalLink, AlertCircle
 import { Badge, Spinner, Skeleton } from '@airaie/ui';
 import { useArtifactDownloadUrl } from '@airaie/shared';
 import type { OutputArtifactDefinition, ArtifactPreviewType } from '@/types/vertical-registry';
+import { ArtifactPreviewRouter } from '@/registry/viewer-registry';
 
 export interface RunArtifact {
   key: string;
@@ -44,76 +45,6 @@ function formatBytes(bytes?: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ─── Artifact preview ────────────────────────────────────────
-
-function ArtifactPreview({
-  def,
-  artifact,
-}: {
-  def: OutputArtifactDefinition;
-  artifact: RunArtifact;
-}) {
-  switch (def.preview) {
-    case 'image':
-      // D-01: Only render image when URL is available (fetched on-demand)
-      if (!artifact.url) {
-        return (
-          <div className="mt-2 border border-surface-border bg-slate-50 flex items-center justify-center py-6">
-            <div className="text-center">
-              <Image size={20} className="text-content-muted mx-auto mb-1" />
-              <span className="text-[10px] text-content-muted">Click to preview</span>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="mt-2 border border-surface-border bg-slate-50 p-1">
-          <img
-            src={artifact.url}
-            alt={def.label}
-            className="w-full h-auto max-h-48 object-contain"
-            loading="lazy"
-          />
-        </div>
-      );
-
-    case 'table':
-      return (
-        <div className="mt-2 text-[10px] text-content-muted italic">
-          Data table preview — click to open full view
-        </div>
-      );
-
-    case 'code':
-      return (
-        <div className="mt-2 text-[10px] text-content-muted italic">
-          Log/text preview — click to expand
-        </div>
-      );
-
-    case 'document':
-      return (
-        <div className="mt-2 text-[10px] text-content-muted italic">
-          PDF document — click to open
-        </div>
-      );
-
-    case '3d':
-      return (
-        <div className="mt-2 border border-surface-border bg-slate-50 flex items-center justify-center py-6">
-          <div className="text-center">
-            <Box size={20} className="text-content-muted mx-auto mb-1" />
-            <span className="text-[10px] text-content-muted">3D viewer (coming soon)</span>
-          </div>
-        </div>
-      );
-
-    case 'download':
-    default:
-      return null;
-  }
 }
 
 // ─── Artifact row ────────────────────────────────────────────
@@ -226,7 +157,14 @@ function ArtifactRow({
 
       {expanded && effectiveArtifact && (
         <div className="px-3 pb-2">
-          <ArtifactPreview def={def} artifact={effectiveArtifact} />
+          <ArtifactPreviewRouter
+            type={def.preview}
+            url={effectiveArtifact.url ?? ''}
+            filename={effectiveArtifact.filename}
+            contentType={effectiveArtifact.content_type}
+            sizeBytes={effectiveArtifact.size_bytes}
+            onDownload={() => handleDownload({} as React.MouseEvent)}
+          />
           <div className="flex items-center gap-2 mt-2">
             {effectiveArtifact.url ? (
               <a
