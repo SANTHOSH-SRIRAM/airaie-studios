@@ -185,6 +185,11 @@ export default function CardDetailPage() {
     sectionRefs.current[step]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
+  // Navigate to Inputs tab when fix suggestion link is clicked in PreflightReport
+  const handleNavigateToInput = useCallback((fieldKey: string) => {
+    setTab('inputs');
+  }, [setTab]);
+
   // Keyboard shortcuts: Escape → back to board, F/Cmd+Shift+F → toggle fullscreen canvas
   useKeyboardNav({
     onEscape: () => navigate(`/boards/${boardId}`),
@@ -434,7 +439,7 @@ export default function CardDetailPage() {
                           </h3>
                         </Card.Header>
                         <Card.Body>
-                          <PreflightReport result={plan.preflight_result as any} />
+                          <PreflightReport result={plan.preflight_result as any} onNavigateToInput={handleNavigateToInput} />
                         </Card.Body>
                       </Card>
                     </div>
