@@ -22,9 +22,8 @@ import { usePlan, usePlanExecutionStatus } from '@hooks/usePlan';
 import { useVerticalConfig } from '@hooks/useVerticalConfig';
 import VerticalBadge from '@components/boards/VerticalBadge';
 import ExecutionTimeline from '@components/studio/ExecutionTimeline';
-import PlanViewer from '@components/studio/PlanViewer';
 import PreflightReport from '@components/studio/PreflightReport';
-import ExecutionProgress from '@components/studio/ExecutionProgress';
+import PlanDAGViewer from '@components/studio/PlanDAGViewer';
 import EvidenceCriteriaTable from '@components/boards/EvidenceCriteriaTable';
 import GateStatusPanel from '@components/studio/GateStatusPanel';
 import FailureAnalysisPanel from '@components/studio/FailureAnalysisPanel';
@@ -418,23 +417,11 @@ export default function CardDetailPage() {
                 <div className={activeTab === 'plan' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}>
                   {plan && (
                     <div ref={(el) => { sectionRefs.current.plan = el; }}>
-                      <Card>
-                        <Card.Header>
-                          <h3 className="text-sm font-semibold text-content-primary">
-                            {isExecuting ? 'Execution Progress' : 'Execution Plan'}
-                          </h3>
-                        </Card.Header>
-                        <Card.Body>
-                          {isExecuting ? (
-                            <ExecutionProgress plan={plan} />
-                          ) : (
-                            <PlanViewer
-                              plan={plan}
-                              readonly={plan.status !== 'draft'}
-                            />
-                          )}
-                        </Card.Body>
-                      </Card>
+                      <PlanDAGViewer
+                        plan={plan}
+                        execStatus={execStatus}
+                        isExecuting={isExecuting}
+                      />
                     </div>
                   )}
 
