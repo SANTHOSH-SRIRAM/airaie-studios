@@ -37,8 +37,10 @@ import GateStatusPanel from '@components/studio/GateStatusPanel';
 import EvidenceComparisonPanel from '@components/studio/EvidenceComparisonPanel';
 import FailureAnalysisPanel from '@components/studio/FailureAnalysisPanel';
 import CardDetailLayout from '@components/studio/CardDetailLayout';
+import type { CardDetailLayoutHandle } from '@components/studio/CardDetailLayout';
 import CardDetailTabs from '@components/studio/CardDetailTabs';
 import { useCardTab } from '@hooks/useCardTab';
+import { useKeyboardNav } from '@hooks/useKeyboardNav';
 import { useHeroArtifact } from '@hooks/useHeroArtifact';
 import { useCardDetailStore } from '@store/cardDetailStore';
 import { useRunArtifacts, useArtifactDownloadUrl } from '@airaie/shared';
@@ -169,6 +171,9 @@ function RunDetailExpanded({ runId, cardId, run }: { runId: string; cardId: stri
 export default function CardDetailPage() {
   const { boardId, cardId } = useParams<{ boardId: string; cardId: string }>();
   const navigate = useNavigate();
+
+  // Ref for imperative access to CardDetailLayout toggle
+  const layoutRef = useRef<CardDetailLayoutHandle>(null);
 
   const { data: board } = useBoardDetail(boardId);
   const {
@@ -328,6 +333,12 @@ export default function CardDetailPage() {
     setConfigDraft((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  // Keyboard shortcuts: Escape → back to board, F/Cmd+Shift+F → toggle fullscreen canvas
+  useKeyboardNav({
+    onEscape: () => navigate(`/boards/${boardId}`),
+    onToggleFullscreen: () => layoutRef.current?.toggleProperties(),
+  });
+
   // --- Loading state ---
   if (cardLoading) {
     return (
@@ -477,6 +488,7 @@ export default function CardDetailPage() {
       {/* Split-pane layout: canvas (tabs) + properties */}
       <div className="flex-1 overflow-hidden">
         <CardDetailLayout
+          layoutRef={layoutRef}
           canvas={
             <CardDetailTabs activeTab={activeTab} onTabChange={setTab}>
               <div className="flex-1 overflow-hidden relative">
