@@ -74,6 +74,9 @@ export interface BoardSummary {
 export interface Card {
   id: string;
   board_id: string;
+  intent_spec_id?: string;
+  agent_id?: string;
+  agent_version?: number;
   name: string;
   title?: string;
   description?: string;
@@ -169,6 +172,9 @@ export interface PlanStep {
   parameters: Record<string, unknown>;
   parameter_schema?: Record<string, unknown>;
   depends_on: string[];
+  progress?: number; // 0-100, populated during execution
+  duration_ms?: number;
+  error?: string;
 }
 
 // --- Verticals ---
@@ -333,6 +339,9 @@ export interface BackendCard {
   board_id: string;
   intent_spec_id?: string;
   card_type: string;
+  intent_type?: string;
+  agent_id?: string;
+  agent_version?: number;
   title: string;
   description: string;
   status: string;

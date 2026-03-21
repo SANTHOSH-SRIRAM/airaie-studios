@@ -90,6 +90,9 @@ function transformPlan(raw: any): PlanResponse {
     depends_on: edges
       .filter((e: any) => e.to_node_id === node.node_id)
       .map((e: any) => e.from_node_id),
+    progress: node.progress,
+    duration_ms: node.duration_ms,
+    error: node.error,
   }));
 
   return {
@@ -200,11 +203,12 @@ function buildAcceptanceCriteria(kpis: any[]): any[] {
 
 /**
  * Auto-create an IntentSpec for a card and link it.
- * Called when plan generation fails with MISSING_INTENT_SPEC.
+ * Called proactively after card creation (when intent_type is set)
+ * or reactively when plan generation fails with MISSING_INTENT_SPEC.
  * Fully dynamic — queries the backend for available intent types
  * based on the board's vertical.
  */
-async function autoProvisionIntentSpec(cardId: string): Promise<void> {
+export async function autoProvisionIntentSpec(cardId: string): Promise<void> {
   // 1. Fetch card to get board_id, config, KPIs, etc.
   const { data: card } = await apiClient.get(KERNEL_ENDPOINTS.CARDS.GET(cardId));
   const boardId = card.board_id;
