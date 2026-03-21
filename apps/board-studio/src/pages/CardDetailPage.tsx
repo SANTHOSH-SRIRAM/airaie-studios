@@ -45,6 +45,7 @@ import { ROUTES } from '@/constants/routes';
 import { formatDateTime, formatDuration } from '@airaie/ui';
 import PlanExecutionPanel from '@components/studio/PlanExecutionPanel';
 import PropertiesPanelContent from '@components/studio/PropertiesPanelContent';
+import ToolShelfPanel from '@components/studio/ToolShelfPanel';
 
 // --- Badge variant mappings ---
 
@@ -407,9 +408,10 @@ export default function CardDetailPage() {
 
                 {/* Tool Shelf tab */}
                 <div className={activeTab === 'tool-shelf' ? 'h-full overflow-auto p-4' : 'hidden'}>
-                  <div className="flex items-center justify-center h-48 text-sm text-content-tertiary border border-dashed border-surface-border rounded">
-                    Tool Shelf -- coming in Phase 5
-                  </div>
+                  <ToolShelfPanel
+                    intentType={card.intent_type}
+                    projectId={board?.project_id}
+                  />
                 </div>
 
                 {/* Plan tab */}
