@@ -1,18 +1,10 @@
 import React from 'react';
 import {
-  LayoutDashboard,
-  Users,
-  Workflow,
-  Bot,
-  Database,
-  FileText,
-  FolderOpen,
-  Settings,
+  LayoutDashboard, Users, Workflow, Bot, Database, FileText, FolderOpen, Settings,
 } from 'lucide-react';
 import SidebarSection from './SidebarSection';
 import SidebarItem from './SidebarItem';
 import UserCard from './UserCard';
-
 import type { SidebarSection as SidebarSectionType } from './types';
 
 interface SidebarProps {
@@ -21,8 +13,6 @@ interface SidebarProps {
   sections?: SidebarSectionType[];
 }
 
-/** External URLs for each studio — used when navigating to a *different* studio.
- *  Reads from VITE_ env vars at build time with localhost fallbacks for dev. */
 const STUDIO_URLS: Record<string, string> = {
   workflows: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_WORKFLOW_STUDIO_URL) || 'http://localhost:3001',
   agents: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AGENT_STUDIO_URL) || 'http://localhost:3002',
@@ -76,21 +66,21 @@ export default function Sidebar({ activeSidebarItem, onNavigate, sections }: Sid
   const navSections = sections ?? SECTIONS;
 
   return (
-    <aside className="w-[230px] h-screen bg-sidebar-bg border-r border-surface-border flex flex-col shrink-0" aria-label="Main navigation">
+    <aside className="w-[256px] h-screen bg-sidebar-bg border-r border-sidebar-border flex flex-col shrink-0" aria-label="Main navigation">
       {/* Logo */}
-      <div className="h-[52px] px-4 border-b border-surface-border flex items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-brand-secondary text-white flex items-center justify-center text-[10px] font-bold tracking-tight">
+      <div className="h-12 px-4 border-b border-sidebar-border flex items-center">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-brand-primary text-white flex items-center justify-center text-sm font-bold">
             A
           </div>
-          <span className="text-sm font-bold text-content-primary tracking-wide">
-            AIRAIE.CAD
+          <span className="text-[15px] font-semibold text-sidebar-text-active tracking-tight">
+            AIRAIE<span className="text-sidebar-icon font-normal">.CAD</span>
           </span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2 scrollbar-hide" aria-label="Studio navigation">
+      <nav className="flex-1 overflow-y-auto py-3 scrollbar-hide" aria-label="Studio navigation">
         {navSections.map((section) => (
           <SidebarSection key={section.id} label={section.label}>
             {section.items.map((item) => (
@@ -101,9 +91,6 @@ export default function Sidebar({ activeSidebarItem, onNavigate, sections }: Sid
                 bullet={'bullet' in item ? item.bullet : undefined}
                 active={activeSidebarItem === item.id}
                 onClick={() => {
-                  // Always route internally first — if the current studio has
-                  // a page for this item (e.g. /workflows), navigate there.
-                  // The page itself can link out to the full studio.
                   if (item.path) onNavigate?.(item.path);
                 }}
               />

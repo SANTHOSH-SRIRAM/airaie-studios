@@ -12,15 +12,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        canvas: { bg: '#f8fafc', grid: '#e2e8f0', 'grid-major': '#cbd5e1' },
+        canvas: { bg: '#ffffff', grid: '#e8ecf0', 'grid-major': '#c6cbd1' },
         node: {
-          control: '#f59e0b',
-          board: '#1e40af',
-          agent: '#8b5cf6',
-          human: '#22c55e',
-          system: '#06b6d4',
+          control: '#f1c21b',
+          board: '#0a0a0a',
+          agent: '#6b6b6b',
+          human: '#24a148',
+          system: '#3d3d3d',
         },
-        selection: '#1e40af',
+        selection: '#0a0a0a',
       },
     },
   },

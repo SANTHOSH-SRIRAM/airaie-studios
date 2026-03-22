@@ -11,7 +11,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const filledStyles: Record<BadgeVariant, string> = {
-  success: 'bg-status-success-light text-green-700',
+  success: 'bg-status-success-light text-status-success-text',
   warning: 'bg-status-warning-light text-amber-700',
   danger: 'bg-status-danger-light text-red-700',
   info: 'bg-status-info-light text-blue-700',
@@ -19,7 +19,7 @@ const filledStyles: Record<BadgeVariant, string> = {
 };
 
 const outlineStyles: Record<BadgeVariant, string> = {
-  success: 'bg-white border border-green-400 text-green-700',
+  success: 'bg-white border border-status-success text-status-success-text',
   warning: 'bg-white border border-amber-400 text-amber-700',
   danger: 'bg-white border border-red-400 text-red-700',
   info: 'bg-white border border-blue-400 text-blue-700',

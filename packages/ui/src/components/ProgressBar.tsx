@@ -18,7 +18,7 @@ export interface ProgressBarProps {
 const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
   striped = false,
-  color = 'bg-brand-secondary',
+  color = 'bg-brand-primary',
   label,
   showPercent = false,
   className,

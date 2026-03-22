@@ -15,12 +15,10 @@ export default function BoardTabs({ tabs, studioName }: BoardTabsProps) {
   const activeTab = tabs.find((t) => location.pathname.startsWith(t.path))?.id ?? tabs[0]?.id;
 
   return (
-    <div className="bg-white border-b border-surface-border px-5">
+    <div className="bg-white border-b border-card-border px-5">
       {studioName && (
         <div className="pt-3 pb-1">
-          <h1 className="text-sm font-bold text-content-primary uppercase tracking-wide">
-            {studioName}
-          </h1>
+          <h1 className="text-sm font-bold text-content-primary uppercase tracking-wide">{studioName}</h1>
         </div>
       )}
       <div className="flex items-center gap-1" role="tablist" aria-label={studioName ? `${studioName} navigation` : 'Studio navigation'}>
@@ -36,8 +34,8 @@ export default function BoardTabs({ tabs, studioName }: BoardTabsProps) {
               className={cn(
                 'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2',
                 isActive
-                  ? 'text-brand-secondary border-brand-secondary'
-                  : 'text-content-tertiary border-transparent hover:text-content-primary hover:border-content-muted'
+                  ? 'text-content-primary border-content-primary'
+                  : 'text-content-helper border-transparent hover:text-content-primary hover:border-content-placeholder'
               )}
             >
               <Icon size={16} />

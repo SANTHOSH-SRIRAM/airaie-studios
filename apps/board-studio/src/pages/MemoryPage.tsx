@@ -30,7 +30,7 @@ function useAgents() {
   return useQuery({
     queryKey: ['agents'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ agents: AgentSummary[] }>('/v0/agents');
+      const { data } = await apiClient.get<{ agents: AgentSummary[] }>('/agents');
       return data.agents ?? [];
     },
   });

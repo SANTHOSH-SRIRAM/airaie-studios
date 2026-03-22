@@ -40,11 +40,15 @@ export function useCards(boardId: string | undefined) {
   });
 }
 
-export function useCardDetail(cardId: string | undefined) {
+export function useCardDetail(
+  cardId: string | undefined,
+  options?: { refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: cardKeys.detail(cardId!),
     queryFn: () => fetchCard(cardId!),
     enabled: !!cardId,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -92,9 +96,10 @@ export function useCreateCard(boardId: string) {
           name: payload.name,
           type: payload.type as Card['type'],
           description: payload.description,
+          intent_type: payload.intent_type,
           status: 'draft',
           ordinal: previousCards.length,
-          config: {},
+          config: payload.config ?? {},
           kpis: {},
           dependencies: payload.dependencies ?? [],
           created_at: new Date().toISOString(),
@@ -125,10 +130,10 @@ export function useUpdateCard() {
     mutationFn: ({
       id,
       ...payload
-    }: { id: string } & Partial<
+    }: { id: string; intent_spec_id?: string } & Partial<
       Pick<
         import('@/types/board').Card,
-        'name' | 'status' | 'config' | 'kpis'
+        'name' | 'status' | 'config' | 'kpis' | 'intent_type'
       >
     >) => updateCard(id, payload),
     onSuccess: (_data, variables) => {

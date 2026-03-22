@@ -5,6 +5,7 @@
 import apiClient from './client';
 import { KERNEL_ENDPOINTS } from '@/constants/api';
 import type { Card, BackendCard, BackendCardGraphNode } from '@/types/board';
+import { autoProvisionIntentSpec } from './plans';
 
 // --- Card graph node/edge types ---
 
@@ -68,11 +69,14 @@ function transformCard(raw: BackendCard, dependencies: string[] = []): Card {
   return {
     id: raw.id,
     board_id: raw.board_id,
+    intent_spec_id: raw.intent_spec_id,
+    agent_id: raw.agent_id,
+    agent_version: raw.agent_version,
     name: raw.title,
     title: raw.title,
     description: raw.description,
     type: raw.card_type as Card['type'],
-    intent_type: (raw as unknown as Record<string, unknown>).intent_type as string | undefined,
+    intent_type: raw.intent_type,
     status: raw.status as Card['status'],
     ordinal: raw.ordinal,
     config: raw.config ?? {},
@@ -186,12 +190,25 @@ export async function createCard(
     });
   }
 
+  // Proactively provision IntentSpec for analysis/comparison/sweep cards with intent_type.
+  // This ensures plan generation works on first click without the fail-retry cycle.
+  const planEligibleTypes = ['analysis', 'comparison', 'sweep'];
+  if (payload.intent_type && planEligibleTypes.includes(payload.type)) {
+    try {
+      await autoProvisionIntentSpec(data.id);
+    } catch {
+      // Non-fatal: plan generation will retry via MISSING_INTENT_SPEC fallback
+    }
+  }
+
   return transformCard(data, deps);
 }
 
 export async function updateCard(
   id: string,
-  payload: Partial<Pick<Card, 'name' | 'status' | 'config' | 'kpis'>>
+  payload: Partial<Pick<Card, 'name' | 'status' | 'config' | 'kpis' | 'intent_type' | 'agent_id' | 'agent_version'>> & {
+    intent_spec_id?: string;
+  }
 ): Promise<Card> {
   // Map frontend fields to backend fields
   const backendPayload: Record<string, unknown> = {};
@@ -199,6 +216,10 @@ export async function updateCard(
   if (payload.status !== undefined) backendPayload.status = payload.status;
   if (payload.config !== undefined) backendPayload.config = payload.config;
   if (payload.kpis !== undefined) backendPayload.kpis = payload.kpis;
+  if (payload.intent_type !== undefined) backendPayload.intent_type = payload.intent_type;
+  if (payload.intent_spec_id !== undefined) backendPayload.intent_spec_id = payload.intent_spec_id;
+  if (payload.agent_id !== undefined) backendPayload.agent_id = payload.agent_id;
+  if (payload.agent_version !== undefined) backendPayload.agent_version = payload.agent_version;
 
   const { data } = await apiClient.patch<BackendCard>(
     KERNEL_ENDPOINTS.CARDS.UPDATE(id),

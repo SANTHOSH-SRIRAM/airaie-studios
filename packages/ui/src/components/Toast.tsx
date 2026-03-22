@@ -59,8 +59,8 @@ const variantConfig: Record<
   },
   info: {
     icon: Info,
-    containerClass: 'border-l-brand-secondary bg-blue-50',
-    iconClass: 'text-brand-secondary',
+    containerClass: 'border-l-brand-primary bg-surface-layer',
+    iconClass: 'text-brand-primary',
   },
 };
 

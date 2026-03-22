@@ -32,7 +32,7 @@ const Spinner: React.FC<SpinnerProps> = ({ size = 'md', className }) => {
       height={px}
       viewBox={`0 0 ${px} ${px}`}
       fill="none"
-      className={cn('animate-spin text-brand-secondary', className)}
+      className={cn('animate-spin text-brand-primary', className)}
       role="status"
       aria-label="Loading"
     >

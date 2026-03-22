@@ -40,7 +40,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className={cn(
               'w-full h-9 px-3 pr-9 text-sm bg-white border border-surface-border rounded-none',
               'text-content-primary appearance-none',
-              'focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1',
+              'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-1',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'transition-colors duration-150',
               error && 'border-status-danger focus:ring-status-danger',

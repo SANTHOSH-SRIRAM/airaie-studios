@@ -6,7 +6,7 @@
 
 /* ============================================================
    Board Studio — Global Styles
-   Inherits @airaie/ui design rules: sharp corners, white + blue
+   Inherits @airaie/ui: sharp corners, black + white, IBM Plex
    ============================================================ */
 
 @layer base {
@@ -20,7 +20,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -31,37 +31,41 @@
     min-height: 100vh;
   }
 
-  /* Themed grid background for main content area */
   .bg-grid {
     background-image:
-      linear-gradient(to right, #e2e8f0 1px, transparent 1px),
-      linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+      linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
     background-size: 32px 32px;
   }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; }
-  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  ::-webkit-scrollbar-thumb { background: #c6cbd1; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #808080; }
+
+  *:focus-visible {
+    outline: 2px solid #0a0a0a;
+    outline-offset: -2px;
+  }
 }
 
 @layer components {
   .card {
-    @apply bg-surface-card border border-surface-border shadow-card;
+    @apply bg-card-bg border border-card-border shadow-card;
   }
   .card-hover {
     @apply card transition-shadow duration-200 hover:shadow-card-hover;
   }
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1;
+    @apply focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-1;
   }
   .progress-striped {
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
       transparent 6px,
-      rgba(255, 255, 255, 0.2) 6px,
-      rgba(255, 255, 255, 0.2) 12px
+      rgba(255, 255, 255, 0.15) 6px,
+      rgba(255, 255, 255, 0.15) 12px
     );
     background-size: 200% 100%;
   }
@@ -79,37 +83,36 @@
    ============================================================ */
 
 :root {
-  /* Studio panel chrome */
   --studio-command-bar-h: 48px;
   --studio-status-bar-h: 28px;
-  --studio-border: #e2e8f0;
+  --studio-border: #e2e5ea;
   --studio-surface: #ffffff;
-  --studio-surface-muted: #f8fafc;
-  --studio-surface-hover: #f1f5f9;
+  --studio-surface-muted: #f7f8fa;
+  --studio-surface-hover: #f5f5f5;
 
-  /* Status-driven color system */
-  --status-running: #3b82f6;
-  --status-running-bg: #eff6ff;
-  --status-completed: #16a34a;
-  --status-completed-bg: #dcfce7;
-  --status-failed: #dc2626;
-  --status-failed-bg: #fee2e2;
-  --status-pending: #94a3b8;
-  --status-pending-bg: #f8fafc;
-  --status-blocked: #f59e0b;
-  --status-blocked-bg: #fef3c7;
+  /* Status colors */
+  --status-running: #3d3d3d;
+  --status-running-bg: #f7f8fa;
+  --status-completed: #24a148;
+  --status-completed-bg: #defbe6;
+  --status-failed: #da1e28;
+  --status-failed-bg: #fff1f1;
+  --status-pending: #a0a0a0;
+  --status-pending-bg: #f7f8fa;
+  --status-blocked: #f1c21b;
+  --status-blocked-bg: rgba(253, 209, 58, 0.15);
 
   /* Mode colors */
-  --mode-explore: #3b82f6;
-  --mode-study: #f59e0b;
-  --mode-release: #16a34a;
+  --mode-explore: #3d3d3d;
+  --mode-study: #6b6b6b;
+  --mode-release: #24a148;
 
   /* Panel resize handle */
-  --resize-handle: #cbd5e1;
-  --resize-handle-active: #3b82f6;
+  --resize-handle: #c6cbd1;
+  --resize-handle-active: #0a0a0a;
 }
 
-/* Resizable panel separator styling (react-resizable-panels v4) */
+/* Resizable panel separators */
 [data-group][data-orientation="horizontal"] > [data-separator] {
   width: 1px;
   background: var(--studio-border);
@@ -145,9 +148,9 @@
 }
 
 @keyframes studio-pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(10, 10, 10, 0.3); }
+  70% { box-shadow: 0 0 0 6px rgba(10, 10, 10, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(10, 10, 10, 0); }
 }
 
 .studio-pulse {
@@ -188,7 +191,7 @@
 
 /* Monospace data display */
 .studio-mono {
-  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: 'IBM Plex Mono', 'Menlo', 'Consolas', monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
@@ -208,9 +211,9 @@
   padding-left: calc(var(--depth, 0) * 16px + 8px);
 }
 
-/* Bottom panel terminal-style logs */
+/* Terminal-style logs */
 .studio-log-line {
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Menlo', monospace;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -224,7 +227,7 @@
 }
 
 .studio-skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, #f7f8fa 25%, #e8ecf0 50%, #f7f8fa 75%);
   background-size: 200% 100%;
   animation: studio-shimmer 1.5s ease-in-out infinite;
 }

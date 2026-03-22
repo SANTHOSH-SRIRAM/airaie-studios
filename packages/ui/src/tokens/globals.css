@@ -4,7 +4,8 @@
 
 /* ============================================================
    @airaie/ui — Global Styles
-   Design rules: ALL corners sharp, white + blue theme
+   Design: Black + White, IBM Plex, sharp corners
+   Centralized with platform frontend design system
    ============================================================ */
 
 @layer base {
@@ -15,7 +16,8 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -24,13 +26,23 @@
     @apply bg-surface-bg text-content-primary;
     line-height: 1.6;
   }
+
+  *:focus-visible {
+    outline: 2px solid #0a0a0a;
+    outline-offset: -2px;
+  }
+
+  ::selection {
+    background-color: #e8ecf0;
+    color: #0a0a0a;
+  }
 }
 
 /* Scrollbar ------------------------------------------------- */
 @layer base {
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -38,51 +50,48 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #c6cbd1;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #808080;
   }
 }
 
 /* Component layer ------------------------------------------- */
 @layer components {
-  /* Sharp card */
   .card {
-    @apply bg-surface-card border border-surface-border shadow-card;
+    @apply bg-card-bg border border-card-border shadow-card;
   }
 
   .card-hover {
     @apply card transition-shadow duration-200 hover:shadow-card-hover;
   }
 
-  /* Interactive focus ring */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1;
+    @apply focus:outline-none focus:ring-2 focus:ring-focus focus:ring-offset-1;
   }
 
-  /* Striped / hatched progress bar fill */
   .progress-striped {
     background-image: repeating-linear-gradient(
       45deg,
       transparent,
       transparent 6px,
-      rgba(255, 255, 255, 0.2) 6px,
-      rgba(255, 255, 255, 0.2) 12px
+      rgba(255, 255, 255, 0.15) 6px,
+      rgba(255, 255, 255, 0.15) 12px
     );
     background-size: 200% 100%;
   }
 
-  /* Truncate text */
   .truncate-line {
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
 
-  /* Monospace code blocks */
   .code-block {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    @apply bg-slate-900 text-slate-100 p-4 text-sm leading-relaxed;
+    font-family: 'IBM Plex Mono', 'Menlo', monospace;
+    @apply bg-gray-100 text-white p-4 text-sm leading-relaxed;
   }
 }
 
@@ -95,5 +104,21 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .skeleton {
+    background-color: #e8ecf0;
+    animation: skeletonPulse 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes skeletonPulse {
+    0%   { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+
+  .cds-divider {
+    width: 100%;
+    height: 1px;
+    background-color: #e2e5ea;
   }
 }

@@ -15,13 +15,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-secondary text-white hover:bg-brand-secondary-dark active:bg-brand-secondary-dark border border-transparent',
+    'bg-brand-primary text-white hover:bg-brand-primary-hover active:bg-brand-primary-hover border border-transparent',
   secondary:
     'bg-white text-content-primary border border-surface-border hover:bg-surface-hover active:bg-slate-100',
   ghost:
     'bg-transparent text-content-secondary hover:bg-slate-100 active:bg-slate-200 border border-transparent',
   outline:
-    'bg-transparent text-brand-secondary border border-brand-secondary hover:bg-blue-50 active:bg-blue-100',
+    'bg-transparent text-brand-primary border border-brand-primary hover:bg-surface-layer active:bg-surface-hover',
   danger:
     'bg-status-danger text-white hover:bg-red-600 active:bg-red-700 border border-transparent',
 };
@@ -62,7 +62,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         className={cn(
           'inline-flex items-center justify-center font-medium transition-colors duration-150',
-          'focus:outline-none focus:ring-2 focus:ring-brand-secondary focus:ring-offset-1',
+          'focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-1',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           'rounded-none', // enforce sharp corners
           variantStyles[variant],

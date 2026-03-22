@@ -21,7 +21,7 @@ function useWorkflows() {
   return useQuery({
     queryKey: ['workflows'],
     queryFn: async () => {
-      const { data } = await apiClient.get<{ workflows: WorkflowSummary[] }>('/v0/workflows');
+      const { data } = await apiClient.get<{ workflows: WorkflowSummary[] }>('/workflows');
       return data.workflows ?? [];
     },
   });
