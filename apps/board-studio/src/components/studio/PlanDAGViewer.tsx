@@ -15,6 +15,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import Dagre from 'dagre';
+import { AlertTriangle } from 'lucide-react';
 import PlanDAGNode from './PlanDAGNode';
 import type { PlanDAGNodeData } from './PlanDAGNode';
 import PlanNodeDetail from './PlanNodeDetail';
@@ -23,10 +24,27 @@ import type { PlanStep } from '@/types/board';
 
 // --- Props ---
 
+interface CompatibleTool {
+  tool_id: string;
+  name: string;
+  tool_version: string;
+}
+
 interface PlanDAGViewerProps {
   plan: PlanResponse;
   execStatus?: PlanExecutionStatus;
   isExecuting: boolean;
+  cardId?: string;
+  onStepEdit?: (
+    stepId: string,
+    changes: {
+      parameters?: Record<string, unknown>;
+      tool_id?: string;
+      tool_version?: string;
+    }
+  ) => void;
+  planModified?: boolean;
+  compatibleTools?: CompatibleTool[];
 }
 
 // --- Node types registry (stable reference) ---
@@ -83,7 +101,15 @@ function FitViewOnChange({ steps, isExecuting }: { steps: PlanStep[]; isExecutin
 
 // --- Main component ---
 
-export default function PlanDAGViewer({ plan, execStatus, isExecuting }: PlanDAGViewerProps) {
+export default function PlanDAGViewer({
+  plan,
+  execStatus,
+  isExecuting,
+  cardId,
+  onStepEdit,
+  planModified,
+  compatibleTools,
+}: PlanDAGViewerProps) {
   const [selectedStep, setSelectedStep] = useState<PlanStep | null>(null);
 
   // Merge live execution data with plan steps
@@ -147,6 +173,14 @@ export default function PlanDAGViewer({ plan, execStatus, isExecuting }: PlanDAG
 
   return (
     <div>
+      {/* Plan modified warning banner */}
+      {planModified && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded mb-2">
+          <AlertTriangle size={14} />
+          <span>Plan modified -- re-run preflight before executing.</span>
+        </div>
+      )}
+
       {/* ReactFlow DAG */}
       <div className="h-[350px] border border-surface-border rounded">
         <ReactFlow
@@ -169,6 +203,9 @@ export default function PlanDAGViewer({ plan, execStatus, isExecuting }: PlanDAG
         <PlanNodeDetail
           step={selectedStep}
           onClose={() => setSelectedStep(null)}
+          onStepEdit={onStepEdit}
+          compatibleTools={compatibleTools}
+          editing={!!onStepEdit && !isExecuting}
         />
       )}
     </div>

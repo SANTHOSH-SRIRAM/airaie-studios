@@ -49,6 +49,8 @@ import ToolShelfPanel from '@components/studio/ToolShelfPanel';
 import BoardModeChip from '@components/studio/BoardModeChip';
 import GovernanceLayersPanel from '@components/studio/GovernanceLayersPanel';
 import DecisionTraceTimeline from '@components/studio/DecisionTraceTimeline';
+import { usePlanEdit } from '@hooks/usePlanEdit';
+import { useToolShelfResolve } from '@hooks/useToolShelfResolve';
 
 // Lazy-load LineageDAGViewer (heavy ReactFlow component)
 const LineageDAGViewer = React.lazy(() => import('@components/studio/LineageDAGViewer'));
@@ -100,6 +102,17 @@ export default function CardDetailPage() {
   const { data: execStatus } = usePlanExecutionStatus(cardId, isExecuting);
   const updateCardMutation = useUpdateCard();
   const { theme, intentConfig } = useVerticalConfig(card, board);
+  const { editStep, recompile, planModified, isRecompiling } = usePlanEdit(cardId ?? '');
+  const { data: resolveData } = useToolShelfResolve(card?.intent_type, board?.project_id);
+  const compatibleTools = useMemo(
+    () =>
+      resolveData?.recommended_tools?.map((t) => ({
+        tool_id: t.tool_id,
+        name: t.name,
+        tool_version: t.tool_version,
+      })) ?? [],
+    [resolveData]
+  );
   const [planExecutionOpen, setPlanExecutionOpen] = useState(false);
   const [lineageArtifactId, setLineageArtifactId] = useState<string | null>(null);
   const [lineageExpanded, setLineageExpanded] = useState(false);
@@ -466,7 +479,23 @@ export default function CardDetailPage() {
                         plan={plan}
                         execStatus={execStatus}
                         isExecuting={isExecuting}
+                        cardId={card.id}
+                        onStepEdit={editStep}
+                        planModified={planModified}
+                        compatibleTools={compatibleTools}
                       />
+                      {planModified && (
+                        <div className="mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => recompile()}
+                            loading={isRecompiling}
+                          >
+                            Re-validate
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
 
