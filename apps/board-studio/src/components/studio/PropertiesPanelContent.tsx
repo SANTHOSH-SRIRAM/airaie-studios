@@ -32,6 +32,7 @@ import { useCardEvidence } from '@hooks/useEvidence';
 import EvidenceCriteriaTable from '@components/boards/EvidenceCriteriaTable';
 import { InlineError } from '@components/studio/InlineError';
 import DecisionTraceViewer from '@components/studio/DecisionTraceViewer';
+import CostSection from '@components/studio/CostSection';
 
 const RunComparisonDrawer = lazy(() => import('@components/studio/RunComparisonDrawer'));
 
@@ -541,6 +542,9 @@ export default function PropertiesPanelContent({
             )}
           </div>
 
+          {/* Per-card cost */}
+          <CostSection card={card} />
+
           {/* Evidence summary */}
           <div className="space-y-2">
             <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">
@@ -594,6 +598,9 @@ export default function PropertiesPanelContent({
               code: 'EXECUTION_FAILED',
             }}
           />
+
+          {/* Per-card cost */}
+          <CostSection card={card} />
 
           {/* Evidence of what passed */}
           {evidence && evidence.some((e) => e.passed) && (

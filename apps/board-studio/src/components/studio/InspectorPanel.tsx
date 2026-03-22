@@ -58,6 +58,8 @@ export interface InspectorPanelProps {
   board?: Board;
   allCards?: Card[];
   readinessSpider?: React.ReactNode;
+  cardDependencyDAG?: React.ReactNode;
+  boardCostSummary?: React.ReactNode;
   onRunCard?: (cardId: string) => void;
   onStopCard?: (cardId: string) => void;
   onDeleteCard?: (cardId: string) => void;
@@ -710,10 +712,14 @@ function GateInspector({ gateId }: { gateId: string }) {
 function BoardOverview({
   summary,
   readinessSpider,
+  cardDependencyDAG,
+  boardCostSummary,
   boardId,
 }: {
   summary: BoardSummary | undefined;
   readinessSpider?: React.ReactNode;
+  cardDependencyDAG?: React.ReactNode;
+  boardCostSummary?: React.ReactNode;
   boardId: string;
 }) {
   const { data: children } = useBoardChildren(boardId);
@@ -772,6 +778,20 @@ function BoardOverview({
               ))}
             </div>
           )}
+        </InspectorSection>
+      )}
+
+      {/* Card Dependencies DAG */}
+      {cardDependencyDAG && (
+        <InspectorSection title="Card Dependencies" defaultOpen={false}>
+          {cardDependencyDAG}
+        </InspectorSection>
+      )}
+
+      {/* Cost Overview */}
+      {boardCostSummary && (
+        <InspectorSection title="Cost Overview" defaultOpen={false}>
+          {boardCostSummary}
         </InspectorSection>
       )}
 
@@ -1032,6 +1052,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   board,
   allCards,
   readinessSpider,
+  cardDependencyDAG,
+  boardCostSummary,
   onRunCard,
   onStopCard,
   onDeleteCard,
@@ -1057,7 +1079,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         ) : selectedItemType === 'gate' && selectedItemId ? (
           <GateInspector gateId={selectedItemId} />
         ) : (
-          <BoardOverview summary={summary} readinessSpider={readinessSpider} boardId={boardId} />
+          <BoardOverview
+            summary={summary}
+            readinessSpider={readinessSpider}
+            cardDependencyDAG={cardDependencyDAG}
+            boardCostSummary={boardCostSummary}
+            boardId={boardId}
+          />
         )}
       </div>
     </div>

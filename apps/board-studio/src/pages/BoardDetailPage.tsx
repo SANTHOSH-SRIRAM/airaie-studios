@@ -38,6 +38,8 @@ const PreflightResults = React.lazy(() => import('@components/boards/PreflightRe
 const GateList = React.lazy(() => import('@components/boards/GateList'));
 const BoardSettingsDialog = React.lazy(() => import('@components/studio/BoardSettingsDialog'));
 const BoardCreationWizard = React.lazy(() => import('@components/boards/BoardCreationWizard'));
+const CardDependencyDAG = React.lazy(() => import('@components/studio/CardDependencyDAG'));
+const BoardCostSummary = React.lazy(() => import('@components/studio/BoardCostSummary'));
 
 // --- Loading skeleton ---
 
@@ -444,6 +446,23 @@ export default function BoardDetailPage() {
             board={board}
             allCards={cards}
             readinessSpider={<ReadinessSpider readiness={readiness} />}
+            cardDependencyDAG={
+              <StudioErrorBoundary label="Card Dependencies">
+                <React.Suspense fallback={<Spinner />}>
+                  <CardDependencyDAG
+                    cards={cards}
+                    onNodeClick={(cardId) => navigate(`/boards/${boardId}/cards/${cardId}`)}
+                  />
+                </React.Suspense>
+              </StudioErrorBoundary>
+            }
+            boardCostSummary={
+              <StudioErrorBoundary label="Cost Overview">
+                <React.Suspense fallback={<Spinner />}>
+                  <BoardCostSummary cards={cards} />
+                </React.Suspense>
+              </StudioErrorBoundary>
+            }
             onRunCard={handleRunCard}
             onStopCard={handleStopCard}
             onDeleteCard={handleDeleteCard}
