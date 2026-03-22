@@ -76,6 +76,69 @@ export interface TypicalGate {
   auto_evaluate: boolean;
 }
 
+// ─── Input Schema types ──────────────────────────────────────
+
+/** A select/multiselect option */
+export interface SelectOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+/** Field type for input schema */
+export type InputFieldType =
+  | 'text'
+  | 'number'
+  | 'select'
+  | 'multiselect'
+  | 'boolean'
+  | 'artifact'
+  | 'range'
+  | 'json'
+  | 'dataset';
+
+/** Single field in an input schema section */
+export interface InputFieldDefinition {
+  key: string;
+  type: InputFieldType;
+  label: string;
+  required: boolean;
+  placeholder?: string;
+  description?: string;
+  unit?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: SelectOption[];
+  artifactTypes?: string[];
+  defaultValue?: unknown;
+  dependsOn?: string;
+}
+
+/** A group of related input fields */
+export interface InputSchemaSection {
+  id: string;
+  label: string;
+  description?: string;
+  collapsible?: boolean;
+  fields: InputFieldDefinition[];
+}
+
+// ─── Output Schema types ─────────────────────────────────────
+
+/** How to preview an artifact */
+export type ArtifactPreviewType = 'image' | '3d' | 'heatmap' | 'document' | 'table' | 'code' | 'download';
+
+/** Single output artifact definition */
+export interface OutputArtifactDefinition {
+  key: string;
+  type: string;
+  label: string;
+  preview: ArtifactPreviewType;
+  downloadable: boolean;
+  description?: string;
+}
+
 /** Card configuration for a specific intent type within a vertical */
 export interface IntentCardConfig {
   intentTypeSlug: string;
@@ -87,6 +150,12 @@ export interface IntentCardConfig {
   executionHints?: ExecutionHints;
   evidenceSchema?: EvidenceSchema;
   typicalGates?: TypicalGate[];
+  inputSchema?: {
+    sections: InputSchemaSection[];
+  };
+  outputSchema?: {
+    artifacts: OutputArtifactDefinition[];
+  };
 }
 
 /** Registry entry for a vertical — theme + intent configs */

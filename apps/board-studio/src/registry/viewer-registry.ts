@@ -41,6 +41,7 @@ export function _resetRegistryForTesting(): void {
 const skeletonConfig: Record<ArtifactPreviewType, string> = {
   image: 'h-64 w-full',
   '3d': 'h-80 w-full',
+  heatmap: 'h-80 w-full',
   document: 'h-96 w-full',
   table: 'h-48 w-full',
   code: 'h-40 w-full',

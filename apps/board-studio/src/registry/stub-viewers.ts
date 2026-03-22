@@ -16,3 +16,6 @@ registerViewer('document', () => import('../viewers/PdfViewer'));
 registerViewer('3d', () => import('../viewers/ThreeDViewer'));
 registerViewer('code', () => import('./stubs/CodeStubViewer'));
 registerViewer('download', () => import('./stubs/DownloadStubViewer'));
+
+// Real viewer (Phase 7)
+registerViewer('heatmap', () => import('../viewers/VtkHeatmapViewer'));
