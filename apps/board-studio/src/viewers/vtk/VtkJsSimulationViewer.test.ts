@@ -97,18 +97,8 @@ const mockVtpReader = {
   delete: vi.fn(),
 };
 
-const mockVtuReader = {
-  setUrl: vi.fn(() => Promise.resolve()),
-  getOutputData: vi.fn(() => mockOutputData),
-  delete: vi.fn(),
-};
-
 vi.mock('@kitware/vtk.js/IO/XML/XMLPolyDataReader', () => ({
   default: { newInstance: vi.fn(() => mockVtpReader) },
-}));
-
-vi.mock('@kitware/vtk.js/IO/XML/XMLUnstructuredGridReader', () => ({
-  default: { newInstance: vi.fn(() => mockVtuReader) },
 }));
 
 // ─── Import after mocks ─────────────────────────────────────
@@ -144,18 +134,20 @@ describe('VtkJsSimulationViewer', () => {
     expect(mockGrw.delete).toHaveBeenCalled();
   });
 
-  it('loadFile() with .vtp URL creates XMLPolyDataReader', async () => {
-    const vtpReaderModule = await import('@kitware/vtk.js/IO/XML/XMLPolyDataReader');
+  it('loadFile() with .vtp URL uses XMLPolyDataReader', async () => {
     await viewer.loadFile('https://example.com/mesh.vtp');
-    expect(vtpReaderModule.default.newInstance).toHaveBeenCalled();
     expect(mockVtpReader.setUrl).toHaveBeenCalledWith('https://example.com/mesh.vtp', { loadData: true });
+    expect(mockVtpReader.delete).toHaveBeenCalled();
+    expect(mockRenderer.resetCamera).toHaveBeenCalled();
+    expect(mockRenderWindow.render).toHaveBeenCalled();
   });
 
-  it('loadFile() with .vtu URL creates XMLUnstructuredGridReader', async () => {
-    const vtuReaderModule = await import('@kitware/vtk.js/IO/XML/XMLUnstructuredGridReader');
+  it('loadFile() with .vtu URL falls back to XMLPolyDataReader with warning', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await viewer.loadFile('https://example.com/result.vtu');
-    expect(vtuReaderModule.default.newInstance).toHaveBeenCalled();
-    expect(mockVtuReader.setUrl).toHaveBeenCalledWith('https://example.com/result.vtu', { loadData: true });
+    expect(mockVtpReader.setUrl).toHaveBeenCalledWith('https://example.com/result.vtu', { loadData: true });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('VTU'));
+    warnSpy.mockRestore();
   });
 
   it('setColorMap() applies named preset via applyColorMap', () => {
