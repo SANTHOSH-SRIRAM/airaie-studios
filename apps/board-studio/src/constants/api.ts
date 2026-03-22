@@ -63,6 +63,8 @@ export const KERNEL_ENDPOINTS = {
   INTENTS: {
     LIST: (boardId: string) => `/boards/${boardId}/intents`,
     CREATE: (boardId: string) => `/boards/${boardId}/intents`,
+    GET: (id: string) => `/intents/${id}`,
+    UPDATE: (id: string) => `/intents/${id}`,
   },
 
   INTENT_TYPES: {
@@ -91,5 +93,9 @@ export const KERNEL_ENDPOINTS = {
     MEMORIES: (agentId: string) => `/agents/${agentId}/memories`,
     MEMORY: (agentId: string, memoryId: string) =>
       `/agents/${agentId}/memories/${memoryId}`,
+  },
+
+  ARTIFACTS: {
+    LINEAGE: (id: string) => `/artifacts/${id}/lineage`,
   },
 } as const;
