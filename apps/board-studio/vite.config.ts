@@ -27,6 +27,7 @@ export default defineConfig({
           'ui': ['@airaie/ui', '@airaie/shell', 'lucide-react'],
           'panels': ['react-resizable-panels'],
           'three': ['three', '@react-three/fiber', '@react-three/drei'],
+          'vtk': ['@kitware/vtk.js'],
         },
       },
     },
