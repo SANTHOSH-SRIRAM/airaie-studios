@@ -41,7 +41,7 @@ const Modal: React.FC<ModalProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -49,26 +49,27 @@ const Modal: React.FC<ModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Content */}
+      {/* Content — constrained to viewport with scrollable body */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative w-full bg-white border border-surface-border shadow-xl rounded-none',
-          'mx-4 animate-in fade-in zoom-in-95 duration-200',
+          'relative w-full bg-white border border-surface-border shadow-xl rounded-lg',
+          'animate-in fade-in zoom-in-95 duration-200',
+          'flex flex-col max-h-[90vh]',
           width,
           className
         )}
       >
-        {/* Header */}
+        {/* Header — sticky */}
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border flex-shrink-0">
             <h2 className="text-base font-semibold text-content-primary">{title}</h2>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 text-content-muted hover:text-content-primary transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-brand-secondary"
+              className="p-1 text-content-muted hover:text-content-primary transition-colors rounded focus:outline-none focus:ring-2 focus:ring-brand-primary"
             >
               <X size={18} />
             </button>
@@ -80,14 +81,14 @@ const Modal: React.FC<ModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 p-1 text-content-muted hover:text-content-primary transition-colors rounded-none focus:outline-none focus:ring-2 focus:ring-brand-secondary"
+            className="absolute top-3 right-3 z-10 p-1 text-content-muted hover:text-content-primary transition-colors rounded focus:outline-none focus:ring-2 focus:ring-brand-primary"
           >
             <X size={18} />
           </button>
         )}
 
-        {/* Body */}
-        <div className="px-5 py-4">{children}</div>
+        {/* Body — scrollable */}
+        <div className="px-5 py-4 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );
