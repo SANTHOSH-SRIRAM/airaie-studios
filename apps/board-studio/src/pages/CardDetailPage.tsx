@@ -6,6 +6,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
+  ChevronDown,
   ChevronRight,
   Clock,
   AlertCircle,
@@ -48,6 +49,9 @@ import ToolShelfPanel from '@components/studio/ToolShelfPanel';
 import BoardModeChip from '@components/studio/BoardModeChip';
 import GovernanceLayersPanel from '@components/studio/GovernanceLayersPanel';
 import DecisionTraceTimeline from '@components/studio/DecisionTraceTimeline';
+
+// Lazy-load LineageDAGViewer (heavy ReactFlow component)
+const LineageDAGViewer = React.lazy(() => import('@components/studio/LineageDAGViewer'));
 
 // --- Badge variant mappings ---
 
@@ -97,6 +101,8 @@ export default function CardDetailPage() {
   const updateCardMutation = useUpdateCard();
   const { theme, intentConfig } = useVerticalConfig(card, board);
   const [planExecutionOpen, setPlanExecutionOpen] = useState(false);
+  const [lineageArtifactId, setLineageArtifactId] = useState<string | null>(null);
+  const [lineageExpanded, setLineageExpanded] = useState(false);
 
   // Tab navigation with URL persistence, state-driven defaults, and Zustand restoration
   const { activeTab, setTab } = useCardTab(card?.status ?? 'draft', cardId);
@@ -156,6 +162,19 @@ export default function CardDetailPage() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [runArtifacts, setHeroKey],
+  );
+
+  // Handle "View Lineage" from thumbnail strip
+  const handleViewLineage = useCallback(
+    (artifactKey: string) => {
+      if (!runArtifacts) return;
+      const kernelArt = runArtifacts.find((a) => a.name === artifactKey);
+      if (kernelArt) {
+        setLineageArtifactId(kernelArt.id);
+        setLineageExpanded(true);
+      }
+    },
+    [runArtifacts],
   );
 
   // Scroll position persistence
@@ -508,11 +527,47 @@ export default function CardDetailPage() {
                             artifacts={thumbnailItems}
                             activeKey={heroArtifact.artifact.key}
                             onSelect={handleThumbnailSelect}
+                            onViewLineage={handleViewLineage}
                           />
                         )}
                       </Card.Body>
                     </Card>
                   )}
+
+                  {/* Artifact Lineage (collapsible) */}
+                  <Card>
+                    <Card.Header>
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 w-full text-left"
+                        onClick={() => setLineageExpanded((v) => !v)}
+                      >
+                        <ChevronDown
+                          size={14}
+                          className={`text-content-muted transition-transform ${lineageExpanded ? '' : '-rotate-90'}`}
+                        />
+                        <h3 className="text-sm font-semibold text-content-primary">
+                          Artifact Lineage
+                        </h3>
+                      </button>
+                    </Card.Header>
+                    {lineageExpanded && (
+                      <Card.Body className="p-0">
+                        <React.Suspense
+                          fallback={
+                            <div className="flex items-center justify-center h-[280px]">
+                              <Spinner />
+                            </div>
+                          }
+                        >
+                          <LineageDAGViewer
+                            artifactId={lineageArtifactId || (runArtifacts?.[0]?.id ?? '')}
+                            highlightId={lineageArtifactId ?? undefined}
+                          />
+                        </React.Suspense>
+                      </Card.Body>
+                    )}
+                  </Card>
 
                   {/* Failure Analysis */}
                   {card.status === 'failed' && evidence && evidence.some((e) => !e.passed) && (
