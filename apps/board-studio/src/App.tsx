@@ -1,17 +1,12 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AppShell } from '@airaie/shell';
 import type { SidebarSectionType } from '@airaie/shell';
 import { Spinner, ErrorBoundary } from '@airaie/ui';
 import {
-  LayoutDashboard,
-  ShieldCheck,
-  Workflow,
-  Bot,
-  Brain,
+  LayoutDashboard, ShieldCheck, Workflow, Bot, Brain,
 } from 'lucide-react';
 
-// Lazy-loaded pages
 const BoardsPage = lazy(() => import('@pages/BoardsPage'));
 const BoardDetailPage = lazy(() => import('@pages/BoardDetailPage'));
 const CardDetailPage = lazy(() => import('@pages/CardDetailPage'));
@@ -20,34 +15,26 @@ const ReleasePacketPage = lazy(() => import('@pages/ReleasePacketPage'));
 const WorkflowsPage = lazy(() => import('@pages/WorkflowsPage'));
 const AgentsPage = lazy(() => import('@pages/AgentsPage'));
 const MemoryPage = lazy(() => import('@pages/MemoryPage'));
+const ViewerTestPage = lazy(() => import('@pages/ViewerTestPage'));
 
-/** Board Studio sidebar sections — matches platform frontend layout */
 const BOARD_SIDEBAR_SECTIONS: SidebarSectionType[] = [
   {
-    id: 'dashboard',
-    label: 'DASHBOARD',
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    ],
+    id: 'dashboard', label: 'DASHBOARD',
+    items: [{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' }],
   },
   {
-    id: 'workspace',
-    label: 'WORKSPACE',
-    items: [
-      { id: 'boards', label: 'Active Boards', bullet: true, path: '/boards' },
-    ],
+    id: 'workspace', label: 'WORKSPACE',
+    items: [{ id: 'boards', label: 'Active Boards', bullet: true, path: '/boards' }],
   },
   {
-    id: 'build',
-    label: 'BUILD',
+    id: 'build', label: 'BUILD',
     items: [
       { id: 'workflows', label: 'Workflows', icon: Workflow, path: '/workflows' },
       { id: 'agents', label: 'Agents', icon: Bot, path: '/agents' },
     ],
   },
   {
-    id: 'project-data',
-    label: 'PROJECT DATA',
+    id: 'project-data', label: 'PROJECT DATA',
     items: [
       { id: 'approvals', label: 'Approvals', icon: ShieldCheck, path: '/approvals' },
       { id: 'memory', label: 'Memory', icon: Brain, path: '/memory' },
@@ -55,7 +42,6 @@ const BOARD_SIDEBAR_SECTIONS: SidebarSectionType[] = [
   },
 ];
 
-/** Map location to active sidebar item */
 function useActiveSidebarItem(): string {
   const { pathname } = useLocation();
   if (pathname.startsWith('/approvals')) return 'approvals';
@@ -66,23 +52,39 @@ function useActiveSidebarItem(): string {
   return 'dashboard';
 }
 
-/** Fullscreen layout — no shell, pages take the entire viewport */
+/** Notify parent (platform iframe host) about fullscreen state.
+ *  Uses a debounce to avoid the race condition where ShellLayout cleanup
+ *  sends false AFTER FullscreenLayout sends true during route transitions. */
+let _fullscreenTimer: ReturnType<typeof setTimeout> | null = null;
+
+function notifyParentFullscreen(fullscreen: boolean) {
+  if (window.parent && window.parent !== window) {
+    if (_fullscreenTimer) clearTimeout(_fullscreenTimer);
+    _fullscreenTimer = setTimeout(() => {
+      window.parent.postMessage({ type: 'airaie:studio:fullscreen', fullscreen }, '*');
+    }, 50);
+  }
+}
+
+function useNotifyParentFullscreen(fullscreen: boolean) {
+  useEffect(() => {
+    notifyParentFullscreen(fullscreen);
+  }, [fullscreen]);
+}
+
+/** Fullscreen layout — board detail, card detail, release packet */
 function FullscreenLayout() {
+  useNotifyParentFullscreen(true);
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center h-screen">
-          <Spinner />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex items-center justify-center h-screen"><Spinner /></div>}>
       <Outlet />
     </Suspense>
   );
 }
 
-/** Shell layout — uses AppShell with sidebar + header */
+/** Shell layout — sidebar + header for list pages */
 function ShellLayout() {
+  useNotifyParentFullscreen(false);
   const navigate = useNavigate();
   const activeItem = useActiveSidebarItem();
 
@@ -94,13 +96,7 @@ function ShellLayout() {
       onNavigate={(path) => navigate(path)}
       showHeader
     >
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center h-64">
-            <Spinner />
-          </div>
-        }
-      >
+      <Suspense fallback={<div className="flex items-center justify-center h-64"><Spinner /></div>}>
         <Outlet />
       </Suspense>
     </AppShell>
@@ -110,20 +106,21 @@ function ShellLayout() {
 export default function App() {
   return (
     <Routes>
-      {/* Fullscreen routes — board detail & card detail always render without shell */}
-      <Route element={<FullscreenLayout />}>
-        <Route path="/boards/:boardId" element={<BoardDetailPage />} />
-        <Route path="/boards/:boardId/cards/:cardId" element={<ErrorBoundary><CardDetailPage /></ErrorBoundary>} />
-        <Route path="/boards/:boardId/release-packet" element={<ErrorBoundary><ReleasePacketPage /></ErrorBoundary>} />
+      {/* Board detail routes — always fullscreen (no sidebar/header) */}
+      <Route path="/boards/:boardId" element={<FullscreenLayout />}>
+        <Route index element={<BoardDetailPage />} />
+        <Route path="cards/:cardId" element={<ErrorBoundary><CardDetailPage /></ErrorBoundary>} />
+        <Route path="release-packet" element={<ErrorBoundary><ReleasePacketPage /></ErrorBoundary>} />
       </Route>
 
-      {/* Shell routes — AppShell handles embedded detection internally */}
+      {/* Shell routes — list pages with sidebar */}
       <Route element={<ShellLayout />}>
         <Route path="/boards" element={<BoardsPage />} />
         <Route path="/workflows" element={<ErrorBoundary><WorkflowsPage /></ErrorBoundary>} />
         <Route path="/agents" element={<ErrorBoundary><AgentsPage /></ErrorBoundary>} />
         <Route path="/approvals" element={<ErrorBoundary><ApprovalsPage /></ErrorBoundary>} />
         <Route path="/memory" element={<ErrorBoundary><MemoryPage /></ErrorBoundary>} />
+        <Route path="/viewer-test" element={<ErrorBoundary><ViewerTestPage /></ErrorBoundary>} />
         <Route path="*" element={<Navigate to="/boards" replace />} />
       </Route>
     </Routes>
