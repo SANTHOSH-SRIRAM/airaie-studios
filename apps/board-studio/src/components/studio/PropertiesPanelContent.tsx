@@ -4,7 +4,7 @@
 //   idle (draft/ready/blocked/skipped) | running (queued/running) | completed | failed
 // ============================================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Play,
@@ -17,6 +17,7 @@ import {
   Save,
   ChevronDown,
   Loader2,
+  BarChart2,
 } from 'lucide-react';
 import { Badge, Button, Spinner } from '@airaie/ui';
 import { formatDateTime, formatDuration } from '@airaie/ui';
@@ -31,6 +32,8 @@ import { useCardEvidence } from '@hooks/useEvidence';
 import EvidenceCriteriaTable from '@components/boards/EvidenceCriteriaTable';
 import { InlineError } from '@components/studio/InlineError';
 import DecisionTraceViewer from '@components/studio/DecisionTraceViewer';
+
+const RunComparisonDrawer = lazy(() => import('@components/studio/RunComparisonDrawer'));
 
 // --- Badge variant mappings ---
 
@@ -259,7 +262,7 @@ export default function PropertiesPanelContent({
     setSelectedRunIds((prev) => {
       const next = new Set(prev);
       if (next.has(runId)) next.delete(runId);
-      else if (next.size < 2) next.add(runId);
+      else if (next.size < 5) next.add(runId);
       return next;
     });
   }, []);
@@ -557,6 +560,7 @@ export default function PropertiesPanelContent({
             runs={runs}
             runsLoading={runsLoading}
             cardId={card.id}
+            card={card}
             expandedRunId={expandedRunId}
             setExpandedRunId={setExpandedRunId}
             selectedRunIds={selectedRunIds}
@@ -616,6 +620,7 @@ export default function PropertiesPanelContent({
             runs={runs}
             runsLoading={runsLoading}
             cardId={card.id}
+            card={card}
             expandedRunId={expandedRunId}
             setExpandedRunId={setExpandedRunId}
             selectedRunIds={selectedRunIds}
@@ -678,6 +683,7 @@ interface RunsSectionProps {
   runs?: CardRun[];
   runsLoading?: boolean;
   cardId: string;
+  card: Card;
   expandedRunId: string | null;
   setExpandedRunId: (id: string | null) => void;
   selectedRunIds: Set<string>;
@@ -688,11 +694,16 @@ function RunsSection({
   runs,
   runsLoading,
   cardId,
+  card,
   expandedRunId,
   setExpandedRunId,
   selectedRunIds,
   toggleRunSelection,
 }: RunsSectionProps) {
+  const [showComparison, setShowComparison] = useState(false);
+
+  const selectedRuns = (runs ?? []).filter((r) => selectedRunIds.has(r.id));
+
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold text-content-tertiary uppercase tracking-wider">
@@ -705,67 +716,103 @@ function RunsSection({
       ) : !runs || runs.length === 0 ? (
         <p className="text-xs text-content-tertiary">No runs executed yet.</p>
       ) : (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-content-tertiary border-b border-surface-border">
-              <th className="text-left pb-1 font-medium w-4"></th>
-              <th className="text-left pb-1 font-medium">Run ID</th>
-              <th className="text-left pb-1 font-medium">Status</th>
-              <th className="text-right pb-1 font-medium">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {runs.map((run, idx) => {
-              const isExpanded = expandedRunId === run.id;
-              const isLatest = idx === 0;
-              return (
-                <React.Fragment key={run.id}>
-                  <tr
-                    className={`border-b border-surface-border last:border-0 cursor-pointer hover:bg-slate-50 select-none ${isLatest ? 'bg-blue-50/30' : ''}`}
-                    onClick={() => setExpandedRunId(isExpanded ? null : run.id)}
-                  >
-                    <td className="py-1 pl-1">
-                      <ChevronDown
-                        size={10}
-                        className={`text-content-muted transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
-                      />
-                    </td>
-                    <td className="py-1 font-mono text-content-primary">
-                      {run.id.slice(0, 8)}
-                    </td>
-                    <td className="py-1">
-                      <Badge
-                        variant={
-                          run.status === 'completed'
-                            ? 'success'
-                            : run.status === 'failed'
-                              ? 'danger'
-                              : run.status === 'running'
-                                ? 'info'
-                                : 'neutral'
-                        }
-                        dot
-                        className="text-[8px]"
-                      >
-                        {run.status}
-                      </Badge>
-                    </td>
-                    <td className="py-1 text-right font-mono text-content-muted">
-                      {run.duration_ms != null ? formatDuration(run.duration_ms) : '--'}
-                    </td>
-                  </tr>
-                  {isExpanded && (
-                    <tr>
-                      <td colSpan={4} className="bg-slate-50 border-b border-surface-border">
-                        <RunDetailExpanded runId={run.id} cardId={cardId} run={run} />
+        <>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-content-tertiary border-b border-surface-border">
+                <th className="text-left pb-1 font-medium w-5"></th>
+                <th className="text-left pb-1 font-medium w-4"></th>
+                <th className="text-left pb-1 font-medium">Run ID</th>
+                <th className="text-left pb-1 font-medium">Status</th>
+                <th className="text-right pb-1 font-medium">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((run, idx) => {
+                const isExpanded = expandedRunId === run.id;
+                const isLatest = idx === 0;
+                const isSelected = selectedRunIds.has(run.id);
+                return (
+                  <React.Fragment key={run.id}>
+                    <tr
+                      className={`border-b border-surface-border last:border-0 cursor-pointer hover:bg-slate-50 select-none ${isLatest ? 'bg-blue-50/30' : ''}`}
+                      onClick={() => setExpandedRunId(isExpanded ? null : run.id)}
+                    >
+                      <td className="py-1 pl-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleRunSelection(run.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="py-1 pl-1">
+                        <ChevronDown
+                          size={10}
+                          className={`text-content-muted transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
+                        />
+                      </td>
+                      <td className="py-1 font-mono text-content-primary">
+                        {run.id.slice(0, 8)}
+                      </td>
+                      <td className="py-1">
+                        <Badge
+                          variant={
+                            run.status === 'completed'
+                              ? 'success'
+                              : run.status === 'failed'
+                                ? 'danger'
+                                : run.status === 'running'
+                                  ? 'info'
+                                  : 'neutral'
+                          }
+                          dot
+                          className="text-[8px]"
+                        >
+                          {run.status}
+                        </Badge>
+                      </td>
+                      <td className="py-1 text-right font-mono text-content-muted">
+                        {run.duration_ms != null ? formatDuration(run.duration_ms) : '--'}
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="bg-slate-50 border-b border-surface-border">
+                          <RunDetailExpanded runId={run.id} cardId={cardId} run={run} />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {selectedRunIds.size >= 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={BarChart2}
+              onClick={() => setShowComparison(true)}
+              className="w-full"
+            >
+              Compare ({selectedRunIds.size} runs)
+            </Button>
+          )}
+
+          {showComparison && (
+            <Suspense fallback={null}>
+              <RunComparisonDrawer
+                open={showComparison}
+                onClose={() => setShowComparison(false)}
+                runs={selectedRuns}
+                card={card}
+              />
+            </Suspense>
+          )}
+        </>
       )}
     </div>
   );
