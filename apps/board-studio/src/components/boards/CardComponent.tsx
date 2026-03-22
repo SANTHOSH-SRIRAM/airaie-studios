@@ -67,7 +67,14 @@ const iconSizeMap = { sm: 11, md: 13, lg: 16 };
 
 const CardComponent: React.FC<CardComponentProps> = ({ card, board, onClick, compact, density: densityProp }) => {
   const { theme, intentConfig } = useVerticalConfig(card, board);
-  const kpiEntries = Object.entries(card.kpis ?? {});
+  // Handle both transformed kpis (Record<string, number>) and raw backend kpis (array of {metric_key, target_value})
+  const rawKpis = card.kpis ?? {};
+  const kpiEntries: [string, unknown][] = Array.isArray(rawKpis)
+    ? rawKpis.map((k: { metric_key?: string; target_value?: unknown; value?: unknown }) => [
+        k.metric_key ?? 'unknown',
+        k.target_value ?? k.value ?? 0,
+      ])
+    : Object.entries(rawKpis);
   const depCount = card.dependencies?.length ?? 0;
 
   // Resolve density: explicit prop > compact fallback > normal

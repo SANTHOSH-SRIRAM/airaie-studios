@@ -36,9 +36,10 @@ export function useKeyboardNav({ onEscape, onToggleFullscreen }: UseKeyboardNavO
         return;
       }
 
-      // F key (no modifiers) or Cmd+Shift+F / Ctrl+Shift+F
+      // F key (no modifiers), Space, or Cmd+Shift+F / Ctrl+Shift+F — toggle fullscreen
       if (
         (e.key === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) ||
+        (e.key === ' ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) ||
         (e.key === 'F' && (e.metaKey || e.ctrlKey) && e.shiftKey)
       ) {
         e.preventDefault();
