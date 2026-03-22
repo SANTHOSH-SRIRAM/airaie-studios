@@ -26,6 +26,7 @@ export default defineConfig({
           'charts': ['@airaie/charts', 'recharts'],
           'ui': ['@airaie/ui', '@airaie/shell', 'lucide-react'],
           'panels': ['react-resizable-panels'],
+          'three': ['three', '@react-three/fiber', '@react-three/drei'],
         },
       },
     },
