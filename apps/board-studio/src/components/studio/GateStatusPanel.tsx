@@ -12,6 +12,10 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Zap,
+  User,
+  ShieldOff,
+  BookOpen,
 } from 'lucide-react';
 import { Badge, Button, Spinner } from '@airaie/ui';
 import type { BadgeVariant } from '@airaie/ui';
@@ -222,6 +226,25 @@ function GateCard({
             {gate.status}
           </span>
         </Badge>
+        {/* Approval type icon */}
+        {gate.status === 'PASSED' && gate.type === 'evidence' && (
+          <span title="Auto-evaluated" className="flex-shrink-0">
+            <Zap size={10} className="text-amber-500" />
+          </span>
+        )}
+        {gate.status === 'PASSED' && gate.type !== 'evidence' && (
+          <span className="flex items-center gap-0.5 flex-shrink-0" title="Manually approved">
+            <User size={10} className="text-blue-500" />
+            {gate.approved_by && (
+              <span className="text-[9px] text-content-muted">{gate.approved_by}</span>
+            )}
+          </span>
+        )}
+        {gate.status === 'FAILED' && (
+          <span title="Blocked" className="flex-shrink-0">
+            <ShieldOff size={10} className="text-red-500" />
+          </span>
+        )}
       </button>
 
       {/* Expanded body */}
@@ -251,6 +274,30 @@ function GateCard({
                 />
               ))}
             </div>
+          )}
+
+          {/* Policy reference */}
+          {gate.policy_ref && (
+            <div className="text-[10px] text-content-muted bg-surface-bg p-2 mt-2 border-l-2 border-blue-300 flex items-start gap-1.5">
+              <BookOpen size={10} className="text-blue-400 flex-shrink-0 mt-0.5" />
+              <span>{gate.policy_ref}</span>
+            </div>
+          )}
+
+          {/* Decision reason */}
+          {gate.status === 'FAILED' && gate.requirements.length > 0 && (
+            <p className="text-[10px] text-red-600 mt-1">
+              {gate.requirements.find((r) => !r.satisfied)?.description ?? 'One or more requirements not met'}
+            </p>
+          )}
+          {gate.status === 'PASSED' && (
+            <p className="text-[10px] text-green-600 mt-1">All requirements met</p>
+          )}
+          {gate.status === 'WAIVED' && (
+            <p className="text-[10px] text-amber-600 mt-1">
+              {/* Show waiver reason from audit trail if available */}
+              Gate requirement waived
+            </p>
           )}
 
           {/* Audit trail (non-compact) */}

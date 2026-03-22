@@ -128,6 +128,10 @@ export interface Gate {
   type: GateType;
   status: GateStatus;
   requirements: GateRequirement[];
+  /** Policy reference that triggered this gate decision */
+  policy_ref?: string;
+  /** User who manually approved the gate */
+  approved_by?: string;
   // Audit trail timestamps (populated when backend supports history)
   created_at?: string;
   evaluated_at?: string;
