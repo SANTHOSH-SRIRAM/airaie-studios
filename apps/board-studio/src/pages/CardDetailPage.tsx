@@ -45,6 +45,9 @@ import { formatDateTime, formatDuration } from '@airaie/ui';
 import PlanExecutionPanel from '@components/studio/PlanExecutionPanel';
 import PropertiesPanelContent from '@components/studio/PropertiesPanelContent';
 import ToolShelfPanel from '@components/studio/ToolShelfPanel';
+import BoardModeChip from '@components/studio/BoardModeChip';
+import GovernanceLayersPanel from '@components/studio/GovernanceLayersPanel';
+import DecisionTraceTimeline from '@components/studio/DecisionTraceTimeline';
 
 // --- Badge variant mappings ---
 
@@ -298,6 +301,7 @@ export default function CardDetailPage() {
               {card.status}
             </Badge>
             {theme && <VerticalBadge theme={theme} size="md" />}
+            {board?.mode && <BoardModeChip mode={board.mode} />}
           </div>
         </div>
 
@@ -317,6 +321,9 @@ export default function CardDetailPage() {
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {board?.mode === 'release' && (
+              <Badge variant="warning" className="text-[10px]">Approval required</Badge>
+            )}
             {card.status === 'running' ? (
               <Button
                 variant="outline"
@@ -420,6 +427,20 @@ export default function CardDetailPage() {
 
                 {/* Plan tab */}
                 <div className={activeTab === 'plan' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}>
+                  {/* TODO: Wire ActionProposalViewer when useActionProposal hook is available */}
+                  {card.type === 'agent' && (
+                    <Card>
+                      <Card.Header>
+                        <h3 className="text-sm font-semibold text-content-primary">Agent Proposal</h3>
+                      </Card.Header>
+                      <Card.Body>
+                        <div className="text-sm text-content-tertiary text-center py-4">
+                          Agent proposal viewer will display here when an active proposal exists.
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  )}
+
                   {plan && (
                     <div ref={(el) => { sectionRefs.current.plan = el; }}>
                       <PlanDAGViewer
@@ -566,6 +587,19 @@ export default function CardDetailPage() {
 
                 {/* Governance tab */}
                 <div className={activeTab === 'governance' ? 'h-full overflow-auto p-4 space-y-4' : 'hidden'}>
+                  {/* Decision Trace Timeline */}
+                  {latestCompletedRun && (
+                    <Card>
+                      <Card.Header>
+                        <h3 className="text-sm font-semibold text-content-primary">Decision Trace</h3>
+                      </Card.Header>
+                      <Card.Body>
+                        <DecisionTraceTimeline runId={latestCompletedRun.id} />
+                      </Card.Body>
+                    </Card>
+                  )}
+
+                  {/* Gates (existing) */}
                   {boardId && (
                     <div ref={(el) => { sectionRefs.current.gate = el; }}>
                       <Card>
@@ -583,6 +617,18 @@ export default function CardDetailPage() {
                         </Card.Body>
                       </Card>
                     </div>
+                  )}
+
+                  {/* Governance Layers */}
+                  {boardId && (
+                    <Card>
+                      <Card.Header>
+                        <h3 className="text-sm font-semibold text-content-primary">Governance Layers</h3>
+                      </Card.Header>
+                      <Card.Body>
+                        <GovernanceLayersPanel cardId={cardId!} boardId={boardId} />
+                      </Card.Body>
+                    </Card>
                   )}
                 </div>
               </div>
