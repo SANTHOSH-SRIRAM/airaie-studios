@@ -44,10 +44,14 @@ export { ENDPOINTS } from './constants/api';
 export * from './schemas/requests';
 
 // Artifact API
-export { listArtifacts, getArtifact, getUploadURL, finalizeArtifact, getDownloadURL, getLineage } from './api/artifacts';
+export { listArtifacts, getArtifact, getUploadURL, finalizeArtifact, getDownloadURL, getLineage, convertArtifact } from './api/artifacts';
+export type { ConvertArtifactResponse } from './api/artifacts';
 
 // Artifact Hooks
 export { useRunArtifacts, useArtifactDownloadUrl } from './hooks/useArtifacts';
+
+// Conversion Hooks
+export { isConvertible, useConvertedArtifact } from './hooks/useConvertedArtifact';
 
 // Artifact Helpers
 export { kernelArtifactToRunArtifact, matchArtifacts, getArtifactPreviewType } from './utils/artifactHelpers';

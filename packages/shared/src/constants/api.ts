@@ -32,6 +32,7 @@ export const ENDPOINTS = {
     FINALIZE: (id: string) => `/artifacts/${id}/finalize`,
     DOWNLOAD_URL: (id: string) => `/artifacts/${id}/download-url`,
     LINEAGE: (id: string) => `/artifacts/${id}/lineage`,
+    CONVERT: (id: string) => `/artifacts/${id}/convert`,
   },
 
   AGENTS: {

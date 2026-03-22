@@ -5,6 +5,7 @@ export interface ViewerProps {
   filename?: string;
   contentType?: string;
   sizeBytes?: number;
+  artifactId?: string;
   onDownload?: () => void;
 }
 

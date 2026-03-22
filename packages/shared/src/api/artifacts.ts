@@ -34,3 +34,18 @@ export async function getLineage(id: string) {
   const { data } = await apiClient.get<KernelArtifactLineage[]>(ENDPOINTS.ARTIFACTS.LINEAGE(id));
   return data;
 }
+
+export interface ConvertArtifactResponse {
+  artifact_id: string;
+  status: 'completed' | 'cached' | 'failed';
+  download_url?: string;
+  error?: string;
+}
+
+export async function convertArtifact(id: string, targetFormat: string = 'gltf') {
+  const { data } = await apiClient.post<ConvertArtifactResponse>(
+    ENDPOINTS.ARTIFACTS.CONVERT(id),
+    { target_format: targetFormat },
+  );
+  return data;
+}
